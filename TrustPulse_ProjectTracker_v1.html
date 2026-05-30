@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TrustPulse — Project Tracker</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #f5f4f0;
+    color: #1a1a18;
+    font-size: 14px;
+    min-height: 100vh;
+    padding: 2rem;
+  }
+
+  .container { max-width: 860px; margin: 0 auto; }
+
+  .header { margin-bottom: 2rem; }
+  .header h1 { font-size: 24px; font-weight: 600; color: #1a1a18; margin-bottom: 4px; }
+  .header p { font-size: 13px; color: #6b6b68; }
+  .header-meta { display: flex; align-items: center; gap: 12px; margin-top: 10px; }
+  .badge { font-size: 11px; font-weight: 500; padding: 3px 10px; border-radius: 20px; border: 1px solid; }
+  .badge-blue { background: #e6f1fb; color: #185fa5; border-color: #b5d4f4; }
+  .badge-gray { background: #f1efe8; color: #5f5e5a; border-color: #d3d1c7; }
+
+  .summary-bar {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 10px;
+    margin-bottom: 2rem;
+  }
+
+  .stat {
+    background: #fff;
+    border: 1px solid #e0ded6;
+    border-radius: 10px;
+    padding: 14px 12px;
+    text-align: center;
+  }
+  .stat-num { font-size: 26px; font-weight: 600; color: #1a1a18; line-height: 1; }
+  .stat-label { font-size: 11px; color: #8a8a86; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
+
+  .progress-bar-wrap { margin-bottom: 2rem; }
+  .progress-label { font-size: 12px; color: #6b6b68; margin-bottom: 6px; display: flex; justify-content: space-between; }
+  .progress-track { height: 6px; background: #e0ded6; border-radius: 10px; overflow: hidden; }
+  .progress-fill { height: 100%; background: #1d9e75; border-radius: 10px; transition: width 0.4s ease; }
+
+  .phase {
+    background: #fff;
+    border: 1px solid #e0ded6;
+    border-radius: 12px;
+    margin-bottom: 14px;
+    overflow: hidden;
+  }
+
+  .phase-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 13px 18px;
+    cursor: pointer;
+    border-bottom: 1px solid #e0ded6;
+    user-select: none;
+  }
+  .phase-header:hover { background: #fafaf8; }
+
+  .phase-num {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 20px;
+    flex-shrink: 0;
+  }
+  .phase-title { font-weight: 500; font-size: 15px; color: #1a1a18; flex: 1; }
+  .phase-count { font-size: 12px; color: #8a8a86; }
+  .phase-chevron { font-size: 12px; color: #8a8a86; transition: transform 0.2s; }
+  .phase-chevron.open { transform: rotate(180deg); }
+
+  .task-list { display: none; }
+  .task-list.open { display: block; }
+
+  .task {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 10px 18px;
+    border-bottom: 1px solid #f0ede6;
+  }
+  .task:last-child { border-bottom: none; }
+  .task.status-done .task-name { text-decoration: line-through; color: #b4b2a9; }
+
+  .task-status { flex-shrink: 0; padding-top: 1px; }
+  .status-select {
+    font-size: 11px;
+    font-weight: 500;
+    padding: 3px 8px;
+    border-radius: 20px;
+    border: 1px solid;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    outline: none;
+    min-width: 88px;
+    text-align: center;
+  }
+
+  .task-body { flex: 1; min-width: 0; }
+  .task-name { font-size: 13px; font-weight: 500; color: #1a1a18; margin-bottom: 2px; line-height: 1.4; }
+  .task-detail { font-size: 12px; color: #6b6b68; line-height: 1.5; margin-bottom: 4px; }
+  .task-files { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 5px; }
+  .file-tag {
+    font-size: 11px;
+    padding: 2px 8px;
+    background: #f5f4f0;
+    border: 1px solid #e0ded6;
+    border-radius: 6px;
+    color: #5f5e5a;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+  }
+
+  .phase-1-num { background: #e6f1fb; color: #185fa5; }
+  .phase-2-num { background: #e1f5ee; color: #0f6e56; }
+  .phase-3-num { background: #faeeda; color: #854f0b; }
+  .phase-4-num { background: #eeedfe; color: #534ab7; }
+  .phase-5-num { background: #faece7; color: #993c1d; }
+  .phase-6-num { background: #f1efe8; color: #5f5e5a; }
+
+  .s-todo { background: #f5f4f0; color: #5f5e5a; border-color: #d3d1c7; }
+  .s-in-progress { background: #faeeda; color: #854f0b; border-color: #fac775; }
+  .s-done { background: #e1f5ee; color: #0f6e56; border-color: #9fe1cb; }
+  .s-blocked { background: #fcebeb; color: #a32d2d; border-color: #f7c1c1; }
+
+  .last-updated {
+    text-align: center;
+    font-size: 11px;
+    color: #b4b2a9;
+    margin-top: 2rem;
+    padding-bottom: 1rem;
+  }
+
+  .reset-btn {
+    display: block;
+    margin: 1rem auto 0;
+    font-size: 11px;
+    color: #b4b2a9;
+    background: none;
+    border: 1px solid #e0ded6;
+    border-radius: 20px;
+    padding: 4px 14px;
+    cursor: pointer;
+  }
+  .reset-btn:hover { color: #a32d2d; border-color: #f7c1c1; background: #fcebeb; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="header">
+    <h1>TrustPulse — project tracker</h1>
+    <p>NHS workforce and performance early warning system</p>
+    <div class="header-meta">
+      <span class="badge badge-blue">Larsen</span>
+      <span class="badge badge-gray">Python / Flask / Plotly</span>
+      <span class="badge badge-gray">NHS Band 5 target</span>
+    </div>
+  </div>
+
+  <div class="summary-bar" id="summary"></div>
+
+  <div class="progress-bar-wrap">
+    <div class="progress-label">
+      <span>Overall progress</span>
+      <span id="pct-label">0%</span>
+    </div>
+    <div class="progress-track">
+      <div class="progress-fill" id="progress-fill" style="width:0%"></div>
+    </div>
+  </div>
+
+  <div id="phases"></div>
+
+  <div class="last-updated" id="last-updated"></div>
+  <button class="reset-btn" onclick="resetAll()">Reset all statuses</button>
+
+</div>
+
+<script>
+const STORAGE_KEY = "trustpulse_tracker_v1";
+
+const phases = [
+  {
+    id: 1,
+    title: "Data collection",
+    numClass: "phase-1-num",
+    tasks: [
+      {
+        id: "1a",
+        name: "Download A&E CSV files — 48 files",
+        detail: "April 2022 to March 2026. One CSV per month. All files flat into one folder.",
+        files: ["trustpulse/data/raw/ae/"],
+        status: "in-progress"
+      },
+      {
+        id: "1b",
+        name: "Download sickness absence — national format — 21 files",
+        detail: "April 2022 to December 2023. Old format, national level only. No ORG_CODE.",
+        files: ["trustpulse/data/raw/sickness/national/"],
+        status: "todo"
+      },
+      {
+        id: "1c",
+        name: "Download sickness absence — trust level — 25 files",
+        detail: "January 2024 to January 2026. New format with ORG_CODE. Organisation-level CSV only.",
+        files: ["trustpulse/data/raw/sickness/trust/"],
+        status: "todo"
+      },
+      {
+        id: "1d",
+        name: "Verify folder structure before writing any code",
+        detail: "Confirm all files are in the correct subfolders. Check file counts match expected totals.",
+        status: "todo"
+      }
+    ]
+  },
+  {
+    id: 2,
+    title: "Data ingestion and cleaning",
+    numClass: "phase-2-num",
+    tasks: [
+      {
+        id: "2a",
+        name: "Write ingest.py — A&E loader",
+        detail: "Load all 48 CSV files. Parse Period column (e.g. MSitAE-APRIL-2022) into proper date. Combine into single dataframe.",
+        files: ["src/ingest.py"],
+        status: "todo"
+      },
+      {
+        id: "2b",
+        name: "Write ingest.py — sickness loader (national)",
+        detail: "Load 21 national format files. Parse DATE column. Combine into single dataframe for context layer.",
+        files: ["src/ingest.py"],
+        status: "todo"
+      },
+      {
+        id: "2c",
+        name: "Write ingest.py — sickness loader (trust level)",
+        detail: "Load 25 trust-level files. Parse DATE and ORG_CODE. Filter to all-staff-groups total. Combine.",
+        files: ["src/ingest.py"],
+        status: "todo"
+      },
+      {
+        id: "2d",
+        name: "Write clean.py — A&E cleaning",
+        detail: "Standardise org codes. Handle nulls. Calculate 4hr performance % = 1 - (over 4hrs Type 1 / attendances Type 1).",
+        files: ["src/clean.py"],
+        status: "todo"
+      },
+      {
+        id: "2e",
+        name: "Write clean.py — sickness cleaning",
+        detail: "Filter to all-staff-groups and all-reasons totals. Calculate sickness rate % = FTE_DAYS_LOST / FTE_DAYS_AVAILABLE.",
+        files: ["src/clean.py"],
+        status: "todo"
+      },
+      {
+        id: "2f",
+        name: "Write clean.py — trust name matching",
+        detail: "Join A&E Org Code to sickness ORG_CODE. Log and handle mismatches. This is the critical join step.",
+        files: ["src/clean.py"],
+        status: "todo"
+      },
+      {
+        id: "2g",
+        name: "Export cleaned processed files",
+        detail: "Save combined cleaned CSVs to data/processed/ for use by all downstream scripts.",
+        files: ["data/processed/ae_clean.csv", "data/processed/sickness_clean.csv"],
+        status: "todo"
+      }
+    ]
+  },
+  {
+    id: 3,
+    title: "Exploratory analysis (Jupyter notebook)",
+    numClass: "phase-3-num",
+    tasks: [
+      {
+        id: "3a",
+        name: "National A&E trend chart — 4 years",
+        detail: "Line chart of monthly 4hr performance vs 78% target reference line. April 2022 to March 2026.",
+        files: ["notebooks/01_eda.ipynb"],
+        status: "todo"
+      },
+      {
+        id: "3b",
+        name: "National sickness absence trend chart",
+        detail: "Line chart April 2022 to January 2026 showing post-COVID sickness pattern at national level.",
+        files: ["notebooks/01_eda.ipynb"],
+        status: "todo"
+      },
+      {
+        id: "3c",
+        name: "Trust-level correlation analysis",
+        detail: "Does rising sickness correlate with falling A&E performance at trust level? What is the typical lag in weeks or months?",
+        files: ["notebooks/01_eda.ipynb"],
+        status: "todo"
+      },
+      {
+        id: "3d",
+        name: "Identify top 10 and bottom 10 trusts",
+        detail: "Ranked by average 4hr performance January 2024 to January 2026. These become showcase examples in the app.",
+        files: ["notebooks/01_eda.ipynb"],
+        status: "todo"
+      },
+      {
+        id: "3e",
+        name: "Document every chart with a written observation",
+        detail: "Each chart must have a markdown cell below it explaining what the data shows. This becomes the README findings section.",
+        files: ["notebooks/01_eda.ipynb"],
+        status: "todo"
+      }
+    ]
+  },
+  {
+    id: 4,
+    title: "Risk scoring logic",
+    numClass: "phase-4-num",
+    tasks: [
+      {
+        id: "4a",
+        name: "Write analyse.py — rolling trend calculator",
+        detail: "3-month rolling average for sickness absence % and A&E 4hr performance % per trust.",
+        files: ["src/analyse.py"],
+        status: "todo"
+      },
+      {
+        id: "4b",
+        name: "Write analyse.py — risk flag logic",
+        detail: "RED = sickness rising 2+ months AND performance falling. AMBER = one of the two. GREEN = neither. Simple and explainable.",
+        files: ["src/analyse.py"],
+        status: "todo"
+      },
+      {
+        id: "4c",
+        name: "Validate risk flags against known trusts",
+        detail: "Manually check 3 to 5 well-known underperforming trusts. Confirm flags match what published data shows.",
+        files: ["src/analyse.py"],
+        status: "todo"
+      },
+      {
+        id: "4d",
+        name: "Write utils.py — shared helper functions",
+        detail: "Date parsing, org code standardisation, percentage formatting. Used across ingest, clean and analyse modules.",
+        files: ["src/utils.py"],
+        status: "todo"
+      }
+    ]
+  },
+  {
+    id: 5,
+    title: "Flask app build",
+    numClass: "phase-5-num",
+    tasks: [
+      {
+        id: "5a",
+        name: "Set up Flask project structure",
+        detail: "app.py, templates/, static/ folders. requirements.txt with all pinned dependencies.",
+        files: ["app/app.py", "requirements.txt"],
+        status: "todo"
+      },
+      {
+        id: "5b",
+        name: "Build national overview page",
+        detail: "Table of all trusts with risk flag (GREEN/AMBER/RED), trend arrow, latest sickness % and A&E %. Sortable.",
+        files: ["templates/index.html"],
+        status: "todo"
+      },
+      {
+        id: "5c",
+        name: "Build trust detail page",
+        detail: "Two Plotly line charts side by side: sickness trend and A&E 4hr performance trend for selected trust.",
+        files: ["templates/trust.html"],
+        status: "todo"
+      },
+      {
+        id: "5d",
+        name: "Add Plotly interactive charts",
+        detail: "Hover tooltips showing exact monthly values. Colour-coded trend lines. 78% target reference line on A&E chart.",
+        files: ["templates/trust.html"],
+        status: "todo"
+      },
+      {
+        id: "5e",
+        name: "Add NHS England region filter",
+        detail: "Filter national table by region using Parent Org column from A&E data.",
+        files: ["templates/index.html"],
+        status: "todo"
+      },
+      {
+        id: "5f",
+        name: "Test full app on local server",
+        detail: "Run flask locally. Check all pages load. Check charts render. Check filter works. Check no broken links.",
+        status: "todo"
+      }
+    ]
+  },
+  {
+    id: 6,
+    title: "Documentation and GitHub",
+    numClass: "phase-6-num",
+    tasks: [
+      {
+        id: "6a",
+        name: "Write README.md",
+        detail: "Sections: project overview, proposition, data sources, methodology, key findings, limitations, skills demonstrated, how to run.",
+        files: ["README.md"],
+        status: "todo"
+      },
+      {
+        id: "6b",
+        name: "Add dashboard screenshots to README",
+        detail: "At least 3 screenshots: national overview table, trust detail view, example RED flag trust.",
+        files: ["README.md"],
+        status: "todo"
+      },
+      {
+        id: "6c",
+        name: "Write .gitignore",
+        detail: "Exclude: data/raw/, data/processed/, venv/, __pycache__/, .env, .DS_Store",
+        files: [".gitignore"],
+        status: "todo"
+      },
+      {
+        id: "6d",
+        name: "Pin all dependencies in requirements.txt",
+        detail: "pandas, flask, plotly, python-dateutil. Pin exact versions used during development.",
+        files: ["requirements.txt"],
+        status: "todo"
+      },
+      {
+        id: "6e",
+        name: "Write basic test file",
+        detail: "Unit tests for clean.py functions using sample data. Demonstrates code quality awareness to reviewers.",
+        files: ["tests/test_clean.py"],
+        status: "todo"
+      },
+      {
+        id: "6f",
+        name: "Push to GitHub as public repo",
+        detail: "Add repo tags: nhs-data, python, flask, healthcare-analytics, performance-analysis, public-sector",
+        status: "todo"
+      },
+      {
+        id: "6g",
+        name: "Decide on hosting or demo",
+        detail: "Option A: convert to Streamlit Cloud for live public demo. Option B: record a walkthrough video for README.",
+        status: "todo"
+      }
+    ]
+  }
+];
+
+const statusConfig = {
+  "todo":        { label: "To do",       cls: "s-todo" },
+  "in-progress": { label: "In progress", cls: "s-in-progress" },
+  "done":        { label: "Done",        cls: "s-done" },
+  "blocked":     { label: "Blocked",     cls: "s-blocked" }
+};
+
+function loadState() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) return JSON.parse(saved);
+  } catch(e) {}
+  const s = {};
+  phases.forEach(p => p.tasks.forEach(t => { s[t.id] = t.status || "todo"; }));
+  return s;
+}
+
+function saveState(s) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
+  } catch(e) {}
+}
+
+let state = loadState();
+
+function countStats() {
+  const all = Object.values(state);
+  return {
+    total: all.length,
+    done: all.filter(s => s === "done").length,
+    inProgress: all.filter(s => s === "in-progress").length,
+    blocked: all.filter(s => s === "blocked").length,
+    todo: all.filter(s => s === "todo").length
+  };
+}
+
+function renderSummary() {
+  const s = countStats();
+  const pct = Math.round((s.done / s.total) * 100);
+  document.getElementById("summary").innerHTML = `
+    <div class="stat"><div class="stat-num">${pct}%</div><div class="stat-label">complete</div></div>
+    <div class="stat"><div class="stat-num">${s.done}</div><div class="stat-label">done</div></div>
+    <div class="stat"><div class="stat-num">${s.inProgress}</div><div class="stat-label">in progress</div></div>
+    <div class="stat"><div class="stat-num">${s.blocked}</div><div class="stat-label">blocked</div></div>
+    <div class="stat"><div class="stat-num">${s.todo}</div><div class="stat-label">to do</div></div>
+  `;
+  document.getElementById("progress-fill").style.width = pct + "%";
+  document.getElementById("pct-label").textContent = pct + "%";
+}
+
+function getPhaseProgress(phase) {
+  const done = phase.tasks.filter(t => state[t.id] === "done").length;
+  return `${done} / ${phase.tasks.length} done`;
+}
+
+function renderPhases() {
+  const container = document.getElementById("phases");
+  container.innerHTML = phases.map((phase, idx) => `
+    <div class="phase">
+      <div class="phase-header" onclick="togglePhase(${idx})">
+        <span class="phase-num ${phase.numClass}">Phase ${phase.id}</span>
+        <span class="phase-title">${phase.title}</span>
+        <span class="phase-count">${getPhaseProgress(phase)}</span>
+        <span class="phase-chevron ${idx === 0 ? 'open' : ''}" id="chevron-${idx}">&#9660;</span>
+      </div>
+      <div class="task-list ${idx === 0 ? 'open' : ''}" id="tasklist-${idx}">
+        ${phase.tasks.map(task => `
+          <div class="task status-${state[task.id]}" id="taskrow-${task.id}">
+            <div class="task-status">
+              <select
+                class="status-select ${statusConfig[state[task.id]].cls}"
+                onchange="updateStatus('${task.id}', this.value)"
+              >
+                ${Object.entries(statusConfig).map(([val, cfg]) =>
+                  `<option value="${val}" ${state[task.id] === val ? "selected" : ""}>${cfg.label}</option>`
+                ).join("")}
+              </select>
+            </div>
+            <div class="task-body">
+              <p class="task-name">${task.name}</p>
+              <p class="task-detail">${task.detail}</p>
+              ${task.files ? `<div class="task-files">${task.files.map(f => `<span class="file-tag">${f}</span>`).join("")}</div>` : ""}
+            </div>
+          </div>
+        `).join("")}
+      </div>
+    </div>
+  `).join("");
+}
+
+function togglePhase(idx) {
+  const list = document.getElementById("tasklist-" + idx);
+  const chevron = document.getElementById("chevron-" + idx);
+  list.classList.toggle("open");
+  chevron.classList.toggle("open");
+}
+
+function updateStatus(taskId, newStatus) {
+  state[taskId] = newStatus;
+  saveState(state);
+  renderSummary();
+  renderPhases();
+  updateTimestamp();
+}
+
+function updateTimestamp() {
+  const now = new Date();
+  document.getElementById("last-updated").textContent =
+    "Last updated: " + now.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" }) +
+    " at " + now.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+}
+
+function resetAll() {
+  if (!confirm("Reset all task statuses to To do?")) return;
+  phases.forEach(p => p.tasks.forEach(t => { state[t.id] = "todo"; }));
+  state["1a"] = "in-progress";
+  saveState(state);
+  renderSummary();
+  renderPhases();
+  updateTimestamp();
+}
+
+renderSummary();
+renderPhases();
+updateTimestamp();
+</script>
+</body>
+</html>
