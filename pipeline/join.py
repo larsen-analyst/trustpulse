@@ -183,8 +183,6 @@ def build_sickness_metrics():
     for (org, month), grp in df.groupby(["org_code", "month"]):
         row = {"org_code": org, "month": month}
 
-        # Overall rate — sum across ALL reason rows for this trust/month
-        # (no "All Reasons" summary row exists — must aggregate)
         total_avail = grp["fte_days_available"].sum()
         total_lost  = grp["fte_days_lost"].sum()
         row["sickness_rate_pct"]         = (total_lost / total_avail * 100) if total_avail > 0 else np.nan
@@ -213,14 +211,10 @@ def build_sickness_metrics():
             lost  = infectious["fte_days_lost"].sum()
             row["sickness_rate_infectious"] = (lost / avail * 100) if avail > 0 else np.nan
 
-        # NOTE: Only "All staff groups" exists — nursing/medical breakdown not available
-
         out_rows.append(row)
 
     out = pd.DataFrame(out_rows)
 
-    # National average per month for peer comparison
-    # Calculate only if column exists and has values
     if "sickness_rate_pct" in out.columns and out["sickness_rate_pct"].notna().any():
         nat_avg = out.groupby("month")["sickness_rate_pct"].mean().rename("nat_avg_sickness")
         out = out.merge(nat_avg, on="month", how="left")
@@ -243,7 +237,6 @@ def build_workforce_metrics():
     df["month"] = to_month_start(df["period_date"])
     df["total"] = pd.to_numeric(df["total"], errors="coerce")
 
-    # Workforce file is long format: data_type column distinguishes FTE vs Headcount
     has_data_type = "data_type" in df.columns
 
     if has_data_type:
@@ -269,7 +262,6 @@ def build_workforce_metrics():
 
     out = pd.DataFrame(out_rows)
 
-    # Join headcount separately
     if len(hc_df) > 0:
         hc_agg = hc_df.groupby(["org_code", "month"])["total"].sum().reset_index()
         hc_agg = hc_agg.rename(columns={"total": "workforce_total_headcount"})
@@ -295,7 +287,6 @@ def build_beds_sitrep_metrics():
     for c in num_cols:
         df[c] = pd.to_numeric(df[c], errors="coerce")
 
-    # Identify columns defensively
     ganda_avail = next((c for c in df.columns if "g&a" in c.lower() and "available" in c.lower() and "adult" not in c.lower()), None)
     ganda_occ   = next((c for c in df.columns if "g&a" in c.lower() and "occup" in c.lower() and "rate" not in c.lower() and "adult" not in c.lower()), None)
     cc_avail    = next((c for c in df.columns if "critical care" in c.lower() and "available" in c.lower()), None)
@@ -329,7 +320,6 @@ def build_beds_sitrep_metrics():
         if ganda_occ:
             out["beds_los21plus_pct"]       = safe_divide(df[los21], df[ganda_occ], scale=100)
 
-    # Aggregate to one row per org per month (sitrep may have multiple rows)
     out = out.groupby(["org_code", "month"]).mean(numeric_only=True).reset_index()
     print(f"  Beds sitrep metrics shape: {out.shape}")
     return out
@@ -352,8 +342,6 @@ def build_discharge_metrics():
     bed_days_nhs    = next((c for c in df.columns if "bed_day" in c.lower() and "nhs" in c.lower()), None)
     bed_days_social = next((c for c in df.columns if "bed_day" in c.lower() and "social" in c.lower()), None)
     pct_same_day    = next((c for c in df.columns if "same_day" in c.lower()), None)
-    delayed_nhs     = next((c for c in df.columns if "delayed" in c.lower() and "nhs" in c.lower() and "bed" not in c.lower()), None)
-    delayed_social  = next((c for c in df.columns if "delayed" in c.lower() and "social" in c.lower() and "bed" not in c.lower()), None)
 
     out = df[["org_code", "month"]].copy()
 
@@ -399,9 +387,6 @@ def build_cancelled_ops_metrics():
         out["not_rescheduled_count"], out["cancelled_ops_count"], scale=100)
     out["cancelled_28day_rate"]               = safe_divide(
         out["cancelled_28day_count"], out["cancelled_ops_count"], scale=100)
-
-    # Cost estimate: £3,000 per cancelled op (approximate NHS reference cost average)
-    # NOTE: actual cost varies by specialty — this is a conservative estimate
     out["cancelled_ops_cost_estimate_gbp"]    = out["cancelled_ops_count"] * 3000
 
     print(f"  Cancelled ops metrics shape: {out.shape}")
@@ -409,7 +394,7 @@ def build_cancelled_ops_metrics():
 
 
 # ---------------------------------------------------------------------------
-# Step 8 — RTT metrics (aggregated from 7.6M rows)
+# Step 8 — RTT metrics
 # ---------------------------------------------------------------------------
 
 def build_rtt_metrics():
@@ -418,20 +403,12 @@ def build_rtt_metrics():
     df["month"] = to_month_start(df["period_date"])
     df["provider_org_code"] = df["provider_org_code"].str.strip()
 
-    # Focus on Part 2 (incomplete pathways) — the waiting list
-    part2 = df[df["rtt_part_type"].str.upper() == "PART_2"].copy()
+    part2  = df[df["rtt_part_type"].str.upper() == "PART_2"].copy()
     part1a = df[df["rtt_part_type"].str.upper() == "PART_1A"].copy()
     part1b = df[df["rtt_part_type"].str.upper() == "PART_1B"].copy()
 
-    # Identify wait bucket columns (numeric week columns)
-    wait_cols = [c for c in df.columns if c.replace(".", "").isdigit() or
-                 (c.startswith("gt") or c.startswith("Gt") or
-                  any(c.startswith(str(i)) for i in range(104)))]
-
-    # Use known column: waiting_under_18_weeks
     under18_col = "waiting_under_18_weeks" if "waiting_under_18_weeks" in df.columns else None
 
-    # All numeric wait bucket cols
     bucket_cols = [c for c in df.columns if c not in [
         "period_date", "provider_org_code", "provider_org_name",
         "rtt_part_type", "rtt_part_description",
@@ -442,9 +419,8 @@ def build_rtt_metrics():
     if under18_col:
         part2[under18_col] = pd.to_numeric(part2[under18_col], errors="coerce")
 
-    # Aggregate Part 2 per trust per month
     agg_part2 = part2.groupby(["provider_org_code", "month"]).agg(
-        rtt_total_incomplete=( bucket_cols[0] if bucket_cols else under18_col, "sum"),
+        rtt_total_incomplete=(bucket_cols[0] if bucket_cols else under18_col, "sum"),
         rtt_within_18_weeks=(under18_col, "sum") if under18_col else (bucket_cols[0], "sum"),
         rtt_specialty_count=("treatment_function_code", "nunique"),
     ).reset_index()
@@ -453,7 +429,6 @@ def build_rtt_metrics():
         agg_part2["rtt_pct_within_18_weeks"] = safe_divide(
             agg_part2["rtt_within_18_weeks"], agg_part2["rtt_total_incomplete"], scale=100)
 
-    # Part 1A and 1B — completed pathways
     for c in bucket_cols:
         if c in part1a.columns:
             part1a[c] = pd.to_numeric(part1a[c], errors="coerce")
@@ -507,24 +482,16 @@ def build_cqc_metrics():
     keep_cols = [c for c in keep_cols if c in df.columns]
 
     out = df[keep_cols].copy()
-    # Try location_ods_code first, fall back to provider_id
-    # location_ods_code is the location-level code (may be blank)
-    # provider_id is the trust-level code (e.g. RGT) — better join key
     if "provider_id" in df.columns:
-        # Use provider_id as org_code for joining to spine
         out["org_code"] = df["provider_id"].str.strip()
     elif "location_ods_code" in df.columns:
         out["org_code"] = df["location_ods_code"].str.strip()
     else:
         out["org_code"] = np.nan
 
-    # One row per org code — aggregate ratings by taking mode (most common rating)
     out = out.dropna(subset=["org_code"])
     out = out[out["org_code"].str.strip() != ""].copy()
 
-    # For trusts with multiple locations, take the overall rating from
-    # the trust-level row (location_type == NHS Trust) if available,
-    # otherwise aggregate numerics by mean
     numeric_cols = [c for c in out.columns if c.endswith("_numeric") or
                     c in ["cqc_domain_min", "cqc_domain_range", "cqc_safe_vs_overall_gap"]]
     text_cols    = [c for c in out.columns if c in ["rating_overall", "rating_safe", "rating_well_led"]]
@@ -549,21 +516,17 @@ def build_oversight_metrics():
     print("\n[join] Building oversight snapshot metrics...")
     df = load("oversight_clean.csv")
 
-    # Numeric segment
     df["oversight_segment_numeric"] = pd.to_numeric(df["league_segment"], errors="coerce")
     df["oversight_in_deficit"]      = (df["in_financial_deficit"].str.upper() == "YES").astype(int)
 
-    # Domain score summary
     score_cols = [c for c in df.columns if c.startswith("domain_score_")]
     if score_cols:
         df["oversight_domain_score_worst"] = df[score_cols].min(axis=1)
         df["oversight_domain_score_range"] = df[score_cols].max(axis=1) - df[score_cols].min(axis=1)
 
-    # Cancer combined
     if "cancer_28day_pct" in df.columns and "cancer_62day_pct" in df.columns:
         df["oversight_cancer_combined"] = df[["cancer_28day_pct", "cancer_62day_pct"]].mean(axis=1)
 
-    # Staff combined
     if "staff_engagement_score" in df.columns and "staff_raising_concerns_score" in df.columns:
         df["oversight_staff_combined"] = df[["staff_engagement_score", "staff_raising_concerns_score"]].mean(axis=1)
 
@@ -589,6 +552,124 @@ def build_oversight_metrics():
 
 
 # ---------------------------------------------------------------------------
+# Step 11 — Staff survey snapshot metrics
+# ---------------------------------------------------------------------------
+
+def build_staff_survey_metrics():
+    print("\n[join] Building staff survey metrics...")
+    df = load("staff_survey_clean.csv")
+
+    df["year"] = pd.to_numeric(df["year"], errors="coerce")
+    df = df.dropna(subset=["org_code", "year"])
+    # Use most recent year per trust as snapshot
+    df = df.sort_values("year").drop_duplicates(subset=["org_code"], keep="last")
+
+    metric_cols = [
+        "pp1_compassionate_inclusive", "pp2_recognised_rewarded",
+        "pp3_voice_counts", "pp3_2_raising_concerns",
+        "pp4_safe_healthy", "pp4_1_health_safety_climate",
+        "pp4_2_burnout", "pp4_3_negative_experiences",
+        "pp5_always_learning", "pp6_work_flexibly", "pp7_team",
+        "theme_engagement", "theme_morale"
+    ]
+    keep_cols = ["org_code", "year"] + [c for c in metric_cols if c in df.columns]
+    out = df[keep_cols].copy()
+
+    rename = {c: f"survey_{c}" for c in metric_cols if c in df.columns}
+    rename["year"] = "survey_year"
+    out = out.rename(columns=rename)
+
+    print(f"  Staff survey metrics shape: {out.shape}")
+    return out
+
+
+# ---------------------------------------------------------------------------
+# Step 12 — Vacancy benchmark metrics (regional, not trust-level)
+# ---------------------------------------------------------------------------
+
+def build_vacancy_metrics():
+    print("\n[join] Building vacancy benchmark metrics...")
+    df = load("vacancies_clean.csv")
+
+    # Keep most recent quarter per region/sector/staff_group/data_type
+    df = df.sort_values("quarter_date").drop_duplicates(
+        subset=["region", "sector", "staff_group", "data_type"], keep="last")
+
+    # Filter to vacancy_rate_pct rows only
+    df_rate = df[df["data_type"] == "vacancy_rate_pct"].copy()
+
+    acute_all = df_rate[
+        (df_rate["sector"].str.lower() == "acute") &
+        (df_rate["staff_group"].str.lower().str.contains("all"))
+    ][["region", "value"]].copy()
+    acute_all = acute_all.rename(columns={"value": "vac_benchmark_acute_all_pct"})
+
+    acute_nursing = df_rate[
+        (df_rate["sector"].str.lower() == "acute") &
+        (df_rate["staff_group"].str.lower().str.contains("nursing"))
+    ][["region", "value"]].copy()
+    acute_nursing = acute_nursing.rename(columns={"value": "vac_benchmark_acute_nursing_pct"})
+
+    out = acute_all.merge(acute_nursing, on="region", how="outer")
+    print(f"  Vacancy benchmark metrics shape: {out.shape}")
+    return out
+
+
+# ---------------------------------------------------------------------------
+# Step 13 — Finance snapshot metrics (fuzzy name match to org_code)
+# ---------------------------------------------------------------------------
+
+def build_finance_metrics():
+    print("\n[join] Building finance metrics (fuzzy name match)...")
+    from difflib import get_close_matches
+
+    fin = load("finance_clean.csv")
+    master_names = load("trust_master.csv")[["org_code", "org_name"]].drop_duplicates()
+
+    # Build lookup: uppercase org_name -> org_code
+    name_to_code = dict(zip(
+        master_names["org_name"].str.upper().str.strip(),
+        master_names["org_code"]
+    ))
+    all_names = list(name_to_code.keys())
+
+    def fuzzy_match(raw_name):
+        if not isinstance(raw_name, str) or not raw_name.strip():
+            return None
+        normalised = " ".join(raw_name.upper().strip().split())
+        if normalised in name_to_code:
+            return name_to_code[normalised]
+        matches = get_close_matches(normalised, all_names, n=1, cutoff=0.6)
+        if matches:
+            return name_to_code[matches[0]]
+        return None
+
+    fin["org_code"] = fin["trust_name"].apply(fuzzy_match)
+
+    matched = fin["org_code"].notna().sum()
+    total = len(fin)
+    print(f"  Fuzzy match: {matched}/{total} rows matched to org_code")
+
+    # Provider rows only, drop unmatched and duplicates
+    fin = fin[fin["row_type"] == "provider"].copy()
+    fin = fin.dropna(subset=["org_code"])
+    fin = fin.drop_duplicates(subset=["org_code"], keep="first")
+
+    keep_cols = ["org_code", "ics_name", "region", "ytd_plan_inc_dsf_m",
+                 "ytd_actual_inc_dsf_m", "ytd_var_m", "var_pct_turnover",
+                 "full_year_plan_exc_dsf_m", "forecast_outturn_exc_dsf_m",
+                 "forecasting_receipt_dsf", "in_deficit"]
+    keep_cols = [c for c in keep_cols if c in fin.columns]
+    out = fin[keep_cols].copy()
+
+    rename = {c: f"fin_{c}" for c in out.columns if c != "org_code"}
+    out = out.rename(columns=rename)
+
+    print(f"  Finance metrics shape: {out.shape}")
+    return out
+
+
+# ---------------------------------------------------------------------------
 # Main join
 # ---------------------------------------------------------------------------
 
@@ -599,15 +680,18 @@ def run():
     spine, ae = build_spine()
 
     # Build all metric tables
-    ae_metrics         = build_ae_metrics(ae)
-    sickness_metrics   = build_sickness_metrics()
-    workforce_metrics  = build_workforce_metrics()
-    beds_metrics       = build_beds_sitrep_metrics()
-    discharge_metrics  = build_discharge_metrics()
-    cancelled_metrics  = build_cancelled_ops_metrics()
-    rtt_metrics        = build_rtt_metrics()
-    cqc_metrics        = build_cqc_metrics()
-    oversight_metrics  = build_oversight_metrics()
+    ae_metrics           = build_ae_metrics(ae)
+    sickness_metrics     = build_sickness_metrics()
+    workforce_metrics    = build_workforce_metrics()
+    beds_metrics         = build_beds_sitrep_metrics()
+    discharge_metrics    = build_discharge_metrics()
+    cancelled_metrics    = build_cancelled_ops_metrics()
+    rtt_metrics          = build_rtt_metrics()
+    cqc_metrics          = build_cqc_metrics()
+    oversight_metrics    = build_oversight_metrics()
+    staff_survey_metrics = build_staff_survey_metrics()
+    vacancy_metrics      = build_vacancy_metrics()
+    finance_metrics      = build_finance_metrics()
 
     # ---------------------------------------------------------------------------
     # Join time series datasets onto spine (left join — keeps all spine rows)
@@ -632,33 +716,52 @@ def run():
         print(f"  After {name} join: {master.shape}")
 
     # ---------------------------------------------------------------------------
-    # Cross-dataset derived metrics (need both datasets joined first)
+    # Cross-dataset derived metrics
     # ---------------------------------------------------------------------------
     print("\n[join] Calculating cross-dataset metrics...")
 
-    # FTE per bed
     if "workforce_total_fte" in master.columns and "beds_ganda_available" in master.columns:
         master["workforce_fte_per_bed"] = safe_divide(
             master["workforce_total_fte"], master["beds_ganda_available"])
 
-    # Delayed days per bed
     if "discharge_total_delayed_bed_days" in master.columns and "beds_ganda_available" in master.columns:
         master["discharge_delayed_days_per_bed"] = safe_divide(
             master["discharge_total_delayed_bed_days"], master["beds_ganda_available"])
 
-    # ---------------------------------------------------------------------------
-    # Nursing FTE trend (month on month change)
-    # ---------------------------------------------------------------------------
     if "workforce_nursing_fte" in master.columns:
         master = master.sort_values(["org_code", "month"])
         master["workforce_nursing_fte_mom_change"] = master.groupby("org_code")[
             "workforce_nursing_fte"].diff()
 
     # ---------------------------------------------------------------------------
-    # Join snapshot datasets (CQC and Oversight — no date dimension)
+    # Join snapshot datasets (no date dimension)
     # ---------------------------------------------------------------------------
-    master = master.merge(cqc_metrics,      on="org_code", how="left")
-    master = master.merge(oversight_metrics, on="org_code", how="left")
+    master = master.merge(cqc_metrics,          on="org_code", how="left")
+    master = master.merge(oversight_metrics,     on="org_code", how="left")
+    master = master.merge(staff_survey_metrics,  on="org_code", how="left")
+    master = master.merge(finance_metrics,       on="org_code", how="left")
+
+    # Vacancy benchmarks join on region from finance data
+    # Map finance region names to vacancy region names before joining
+    region_map = {
+        "North West Region":              "North West",
+        "North East & Yorkshire Region":  "North East and Yorkshire",
+        "Midlands Region":                "Midlands",
+        "East Region":                    "East of England",
+        "London Region":                  "London",
+        "South West Region":              "South West",
+        "South East Region":              "South East",
+    }
+    if "fin_region" in master.columns and not vacancy_metrics.empty:
+        master["_vac_region"] = master["fin_region"].map(region_map)
+        master = master.merge(
+            vacancy_metrics,
+            left_on="_vac_region",
+            right_on="region",
+            how="left"
+        )
+        master = master.drop(columns=["_vac_region", "region"], errors="ignore")
+
     print(f"  After snapshot joins: {master.shape}")
 
     # ---------------------------------------------------------------------------
