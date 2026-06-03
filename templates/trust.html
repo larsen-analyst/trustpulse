@@ -1,0 +1,323 @@
+{% extends "base.html" %}
+
+{% block title %}{{ trust.org_name or trust.org_code }} — TrustPulse{% endblock %}
+
+{% block content %}
+
+<!-- Trust header -->
+<div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start;">
+  <div>
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px;">
+      <span class="rag {{ trust.risk_rag or 'Unknown' }}" style="font-size:13px;">
+        {{ trust.risk_rag or 'Unknown' }} risk
+      </span>
+      <span class="mono" style="color:var(--muted);">{{ trust.org_code }}</span>
+    </div>
+    <h1>{{ trust.org_name or trust.org_code }}</h1>
+    <p>
+      {% if trust.region %}{{ trust.region }} &nbsp;·&nbsp; {% endif %}
+      Risk score: <strong>{{ "%.1f"|format(trust.risk_score) if trust.risk_score else '—' }}</strong>
+      &nbsp;·&nbsp;
+      {{ trust.red_flag_count or 0 }} red flags,
+      {{ trust.amber_flag_count or 0 }} amber flags
+    </p>
+  </div>
+  <a href="/" style="color:var(--muted);text-decoration:none;font-size:13px;">← Back</a>
+</div>
+
+<!-- Financial headline -->
+{% if trust.est_total_annual_inefficiency_cost_gbp %}
+<div class="card" style="margin-bottom:24px;border-color:var(--amber);background:var(--amber-dim);">
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;">
+    <div>
+      <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.8px;color:var(--amber);margin-bottom:4px;">Estimated annual inefficiency cost</div>
+      <div style="font-size:32px;font-weight:600;font-family:'DM Mono',monospace;color:var(--amber);">
+        £{{ "{:,.0f}".format(trust.est_total_annual_inefficiency_cost_gbp) }}
+      </div>
+      <div style="font-size:12px;color:var(--muted);margin-top:4px;">
+        Delayed discharge + cancelled ops + sickness absence. NHS published rates. Estimate only.
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;">
+      {% if trust.est_annual_delayed_discharge_cost_gbp %}
+      <div>
+        <div style="font-size:11px;color:var(--muted);">Delayed discharge</div>
+        <div style="font-family:'DM Mono',monospace;font-weight:600;">£{{ "{:,.0f}".format(trust.est_annual_delayed_discharge_cost_gbp) }}</div>
+        <div style="font-size:10px;color:var(--muted);">£345/day</div>
+      </div>
+      {% endif %}
+      {% if trust.est_annual_cancelled_ops_cost_gbp %}
+      <div>
+        <div style="font-size:11px;color:var(--muted);">Cancelled ops</div>
+        <div style="font-family:'DM Mono',monospace;font-weight:600;">£{{ "{:,.0f}".format(trust.est_annual_cancelled_ops_cost_gbp) }}</div>
+        <div style="font-size:10px;color:var(--muted);">£3,000/op</div>
+      </div>
+      {% endif %}
+      {% if trust.est_annual_sickness_cost_gbp %}
+      <div>
+        <div style="font-size:11px;color:var(--muted);">Sickness absence</div>
+        <div style="font-family:'DM Mono',monospace;font-weight:600;">£{{ "{:,.0f}".format(trust.est_annual_sickness_cost_gbp) }}</div>
+        <div style="font-size:10px;color:var(--muted);">£200/FTE day</div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Domain RAG summary -->
+<div class="card" style="margin-bottom:24px;">
+  <div class="card-title">Domain performance</div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;">
+    {% set domains = [
+      ('A&E Performance',    'ae_pct_within_4hrs_type1_rag',    'ae_pct_within_4hrs_type1_3m_avg',   '%'),
+      ('Sickness Absence',   'sickness_rate_pct_rag',           'sickness_rate_pct_3m_avg',          '%'),
+      ('Bed Occupancy',      'beds_ganda_occupancy_rate_rag',   'beds_ganda_occupancy_rate_3m_avg',  '%'),
+      ('RTT 18-week',        'rtt_pct_within_18_weeks_rag',     'rtt_pct_within_18_weeks_3m_avg',    '%'),
+      ('Delayed Discharge',  'discharge_total_delayed_bed_days_rag', 'discharge_total_delayed_bed_days_3m_avg', ' days'),
+      ('CQC Overall',        'rating_overall_numeric_rag',      'rating_overall',                    ''),
+      ('Oversight Segment',  'oversight_segment_numeric_rag',   'oversight_segment_numeric',         ''),
+    ] %}
+    {% for name, rag_key, val_key, unit in domains %}
+    {% set rag_val = trust[rag_key] if rag_key in trust else None %}
+    {% set metric_val = trust[val_key] if val_key in trust else None %}
+    <div style="background:var(--surface2);border-radius:6px;padding:14px;">
+      <div style="font-size:11px;color:var(--muted);margin-bottom:6px;">{{ name }}</div>
+      <div style="font-size:20px;font-family:'DM Mono',monospace;font-weight:600;margin-bottom:6px;">
+        {% if metric_val and metric_val != 'nan' %}
+          {{ "%.1f"|format(metric_val|float) }}{{ unit }}
+        {% else %}—{% endif %}
+      </div>
+      <span class="rag {{ rag_val or 'Unknown' }}">{{ rag_val or '—' }}</span>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- Charts -->
+<div class="grid-2" style="margin-bottom:24px;">
+  <div class="card">
+    <div class="card-title">A&amp;E performance trend</div>
+    <div id="chart-ae" style="height:220px;"></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Sickness absence trend</div>
+    <div id="chart-sickness" style="height:220px;"></div>
+  </div>
+</div>
+
+<!-- Detailed metrics -->
+<div class="grid-2">
+  <div class="card">
+    <div class="card-title">Workforce &amp; sickness</div>
+    {% set workforce_metrics = [
+      ('Total FTE',              'workforce_total_fte_3m_avg',         '',  ''),
+      ('Nursing FTE',            'workforce_nursing_fte_3m_avg',       '',  ''),
+      ('Sickness rate',          'sickness_rate_pct_3m_avg',           '%', 'sickness_rate_pct_trend'),
+      ('Anxiety/stress rate',    'sickness_rate_anxiety_3m_avg',       '%', 'sickness_rate_anxiety_trend'),
+      ('MSK sickness rate',      'sickness_rate_musculoskeletal_3m_avg','%',''),
+      ('FTE days lost (monthly)','fte_days_lost_total_3m_avg',         '',  ''),
+      ('Vs national avg',        'sickness_vs_national_avg_3m_avg',    '%', ''),
+    ] %}
+    {% for label, col, unit, trend_col in workforce_metrics %}
+    {% set val = trust[col] if col in trust else None %}
+    <div class="metric-row">
+      <span class="metric-name">{{ label }}</span>
+      <span class="metric-val">
+        {% if val and val != 'nan' %}
+          {{ "%.1f"|format(val|float) }}{{ unit }}
+        {% else %}<span class="metric-null">no data</span>{% endif %}
+      </span>
+      {% if trend_col and trend_col in trust and trust[trend_col] %}
+      <span class="trend {{ trust[trend_col] }}">{{ trust[trend_col] }}</span>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="card">
+    <div class="card-title">Operational efficiency</div>
+    {% set ops_metrics = [
+      ('G&A bed occupancy',      'beds_ganda_occupancy_rate_3m_avg',   '%', 'beds_ganda_occupancy_rate_trend'),
+      ('CC bed occupancy',       'beds_cc_occupancy_rate_3m_avg',      '%', ''),
+      ('LOS 7+ days',            'beds_los7plus_pct_3m_avg',           '%', ''),
+      ('Delayed bed days',       'discharge_total_delayed_bed_days_3m_avg', '', 'discharge_total_delayed_bed_days_trend'),
+      ('Same-day discharge',     'discharge_pct_same_day_3m_avg',      '%', ''),
+      ('Cancelled ops',          'cancelled_ops_count_3m_avg',         '',  'cancelled_ops_count_trend'),
+      ('Not rescheduled rate',   'cancelled_ops_not_rescheduled_rate_3m_avg', '%', ''),
+    ] %}
+    {% for label, col, unit, trend_col in ops_metrics %}
+    {% set val = trust[col] if col in trust else None %}
+    <div class="metric-row">
+      <span class="metric-name">{{ label }}</span>
+      <span class="metric-val">
+        {% if val and val != 'nan' %}
+          {{ "%.1f"|format(val|float) }}{{ unit }}
+        {% else %}<span class="metric-null">no data</span>{% endif %}
+      </span>
+      {% if trend_col and trend_col in trust and trust[trend_col] %}
+      <span class="trend {{ trust[trend_col] }}">{{ trust[trend_col] }}</span>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="card">
+    <div class="card-title">RTT waiting times</div>
+    {% set rtt_metrics = [
+      ('18-week performance',    'rtt_pct_within_18_weeks_3m_avg',     '%', 'rtt_pct_within_18_weeks_trend'),
+      ('Total incomplete',       'rtt_total_incomplete_3m_avg',        '',  ''),
+      ('52-week waiters',        'rtt_within_18_weeks_3m_avg',         '',  ''),
+      ('Admitted completed',     'rtt_admitted_completed_3m_avg',      '',  ''),
+      ('Active specialties',     'rtt_specialty_count_3m_avg',         '',  ''),
+    ] %}
+    {% for label, col, unit, trend_col in rtt_metrics %}
+    {% set val = trust[col] if col in trust else None %}
+    <div class="metric-row">
+      <span class="metric-name">{{ label }}</span>
+      <span class="metric-val">
+        {% if val and val != 'nan' %}
+          {{ "%.1f"|format(val|float) }}{{ unit }}
+        {% else %}<span class="metric-null">no data</span>{% endif %}
+      </span>
+      {% if trend_col and trend_col in trust and trust[trend_col] %}
+      <span class="trend {{ trust[trend_col] }}">{{ trust[trend_col] }}</span>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="card">
+    <div class="card-title">CQC &amp; Oversight</div>
+    {% set quality_metrics = [
+      ('CQC Overall',            'rating_overall',                     '', ''),
+      ('CQC Safe',               'rating_safe',                        '', ''),
+      ('CQC Well-led',           'rating_well_led',                    '', ''),
+      ('CQC domain min score',   'cqc_domain_min',                     '', ''),
+      ('CQC safe vs overall gap','cqc_safe_vs_overall_gap',            '', ''),
+      ('Oversight segment',      'oversight_segment_numeric',          '', ''),
+      ('Oversight rank',         'league_rank',                        '', ''),
+      ('In financial deficit',   'oversight_in_deficit',               '', ''),
+      ('Staff engagement score', 'staff_engagement_score',             '', ''),
+      ('Productivity growth',    'productivity_growth_estimate',       '', ''),
+    ] %}
+    {% for label, col, unit, trend_col in quality_metrics %}
+    {% set val = trust[col] if col in trust else None %}
+    <div class="metric-row">
+      <span class="metric-name">{{ label }}</span>
+      <span class="metric-val">
+        {% if val and val != 'nan' and val != 'None' %}
+          {% if val|string|float(-999) != -999 %}
+            {{ "%.2f"|format(val|float) }}{{ unit }}
+          {% else %}
+            {{ val }}
+          {% endif %}
+        {% else %}<span class="metric-null">no data</span>{% endif %}
+      </span>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+const trust = {{ trust | tojson }};
+
+// Helper: format month label
+function fmtMonth(m) {
+  if (!m) return '';
+  const d = new Date(m);
+  return d.toLocaleDateString('en-GB', {month:'short', year:'2-digit'});
+}
+
+// Build sparkline from latest/3m_avg/prior values we have
+// For a real time series we would need the master CSV — use what is in profiles
+function sparklineFromProfile(latestKey, avgKey, priorKey) {
+  const latest = trust[latestKey];
+  const avg    = trust[avgKey];
+  const prior  = trust[priorKey];
+  const vals   = [prior, avg, latest].filter(v => v != null && !isNaN(v));
+  return vals;
+}
+
+// A&E chart
+(function() {
+  const latest = trust['ae_pct_within_4hrs_type1_latest'];
+  const avg    = trust['ae_pct_within_4hrs_type1_3m_avg'];
+  const prior  = trust['ae_pct_within_4hrs_type1_prior_3m_avg'];
+  const vals   = [prior, avg, latest].filter(v => v != null && !isNaN(parseFloat(v)));
+  const labels = ['Prior 3m avg', '3m avg', 'Latest'].slice(-vals.length);
+
+  if (vals.length === 0) {
+    document.getElementById('chart-ae').innerHTML = '<p style="color:var(--muted);padding:20px;font-size:13px;">No data available</p>';
+    return;
+  }
+
+  Plotly.newPlot('chart-ae', [
+    {
+      type: 'bar',
+      x: labels,
+      y: vals.map(v => parseFloat(v).toFixed(1)),
+      marker: { color: vals.map(v => parseFloat(v) < 76 ? '#f85149' : parseFloat(v) < 95 ? '#d29922' : '#3fb950') },
+      hovertemplate: '%{x}: %{y}%<extra></extra>',
+    },
+    {
+      type: 'scatter', mode: 'lines',
+      x: [labels[0], labels[labels.length-1]],
+      y: [95, 95],
+      line: { color: '#3fb950', dash: 'dot', width: 1 },
+      name: '95% target',
+      hoverinfo: 'skip',
+    }
+  ], {
+    paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
+    yaxis: { range: [0, 105], gridcolor: 'rgba(255,255,255,0.06)', ticksuffix: '%', tickfont: { family: 'DM Mono', size: 11 } },
+    xaxis: { tickfont: { family: 'DM Sans', size: 11 } },
+    margin: { t: 10, b: 30, l: 45, r: 10 },
+    showlegend: false,
+    font: { color: '#7d8590' },
+  }, { responsive: true, displayModeBar: false });
+})();
+
+// Sickness chart
+(function() {
+  const latest = trust['sickness_rate_pct_latest'];
+  const avg    = trust['sickness_rate_pct_3m_avg'];
+  const prior  = trust['sickness_rate_pct_prior_3m_avg'];
+  const vals   = [prior, avg, latest].filter(v => v != null && !isNaN(parseFloat(v)));
+  const labels = ['Prior 3m avg', '3m avg', 'Latest'].slice(-vals.length);
+
+  if (vals.length === 0) {
+    document.getElementById('chart-sickness').innerHTML = '<p style="color:var(--muted);padding:20px;font-size:13px;">No data available</p>';
+    return;
+  }
+
+  Plotly.newPlot('chart-sickness', [
+    {
+      type: 'bar',
+      x: labels,
+      y: vals.map(v => parseFloat(v).toFixed(2)),
+      marker: { color: vals.map(v => parseFloat(v) > 6 ? '#f85149' : parseFloat(v) > 4 ? '#d29922' : '#3fb950') },
+      hovertemplate: '%{x}: %{y}%<extra></extra>',
+    },
+    {
+      type: 'scatter', mode: 'lines',
+      x: [labels[0], labels[labels.length-1]],
+      y: [4, 4],
+      line: { color: '#d29922', dash: 'dot', width: 1 },
+      name: '4% amber threshold',
+      hoverinfo: 'skip',
+    }
+  ], {
+    paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
+    yaxis: { gridcolor: 'rgba(255,255,255,0.06)', ticksuffix: '%', tickfont: { family: 'DM Mono', size: 11 } },
+    xaxis: { tickfont: { family: 'DM Sans', size: 11 } },
+    margin: { t: 10, b: 30, l: 45, r: 10 },
+    showlegend: false,
+    font: { color: '#7d8590' },
+  }, { responsive: true, displayModeBar: false });
+})();
+</script>
+{% endblock %}

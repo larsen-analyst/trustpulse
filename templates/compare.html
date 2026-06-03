@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block title %}Compare Trusts — TrustPulse{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <h1>Compare Trusts</h1>
+  <p>Select up to three trusts to compare side by side</p>
+</div>
+
+<div class="card" style="margin-bottom:24px;">
+  <div class="card-title">Select trusts</div>
+  <div style="display:flex;gap:12px;flex-wrap:wrap;">
+    {% for i in range(1, 4) %}
+    <div style="flex:1;min-width:200px;">
+      <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:6px;">Trust {{ i }}</label>
+      <select id="trust-select-{{ i }}" style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:8px 10px;font-family:inherit;font-size:13px;outline:none;">
+        <option value="">— Select trust —</option>
+        {% for t in trust_list %}
+        <option value="{{ t.org_code }}">{{ t.org_name or t.org_code }} ({{ t.org_code }})</option>
+        {% endfor %}
+      </select>
+    </div>
+    {% endfor %}
+    <div style="display:flex;align-items:flex-end;">
+      <button onclick="loadComparison()" style="background:var(--blue);color:#fff;border:none;border-radius:6px;padding:9px 20px;font-family:inherit;font-size:13px;cursor:pointer;font-weight:500;">
+        Compare
+      </button>
+    </div>
+  </div>
+</div>
+
+<div id="comparison-output"></div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function loadComparison() {
+  const codes = [1,2,3]
+    .map(i => document.getElementById(`trust-select-${i}`).value)
+    .filter(Boolean);
+
+  if (codes.length < 2) {
+    alert('Please select at least two trusts to compare.');
+    return;
+  }
+
+  const data = await Promise.all(codes.map(c => fetch(`/api/trust/${c}`).then(r => r.json())));
+
+  const metrics = [
+    ['Risk score',              'risk_score',                            ''],
+    ['Risk RAG',                'risk_rag',                              ''],
+    ['A&E 4hr % (3m avg)',      'ae_pct_within_4hrs_type1_3m_avg',      '%'],
+    ['A&E trend',               'ae_pct_within_4hrs_type1_trend',        ''],
+    ['Sickness rate (3m avg)',  'sickness_rate_pct_3m_avg',              '%'],
+    ['Sickness trend',          'sickness_rate_pct_trend',               ''],
+    ['Anxiety sickness rate',   'sickness_rate_anxiety_3m_avg',          '%'],
+    ['G&A occupancy (3m avg)',  'beds_ganda_occupancy_rate_3m_avg',      '%'],
+    ['RTT 18-week (3m avg)',    'rtt_pct_within_18_weeks_3m_avg',        '%'],
+    ['RTT trend',               'rtt_pct_within_18_weeks_trend',         ''],
+    ['Delayed bed days',        'discharge_total_delayed_bed_days_3m_avg',''],
+    ['CQC overall',             'rating_overall',                        ''],
+    ['Oversight segment',       'oversight_segment_numeric',             ''],
+    ['Est. annual cost',        'est_total_annual_inefficiency_cost_gbp',''],
+    ['Red flag count',          'red_flag_count',                        ''],
+  ];
+
+  let html = `
+    <div class="card">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Metric</th>
+            ${data.map(t => `<th>${(t.org_name||t.org_code||'').substring(0,30)}<br><span class="mono" style="color:var(--muted)">${t.org_code||''}</span></th>`).join('')}
+          </tr>
+        </thead>
+        <tbody>
+  `;
+
+  for (const [label, key, unit] of metrics) {
+    const vals = data.map(t => t[key]);
+    html += `<tr><td style="color:var(--muted);font-size:12px;">${label}</td>`;
+    for (const v of vals) {
+      let display = '—';
+      let style = '';
+      if (v !== null && v !== undefined && v !== 'nan') {
+        const n = parseFloat(v);
+        if (!isNaN(n) && unit === '%') {
+          display = n.toFixed(1) + '%';
+        } else if (!isNaN(n) && unit === '') {
+          display = key.includes('cost') ? '£' + n.toLocaleString('en-GB', {maximumFractionDigits:0}) : n.toFixed(1);
+        } else {
+          display = String(v);
+        }
+        // RAG colour
+        if (key === 'risk_rag' || key === 'rating_overall_rag') {
+          display = `<span class="rag ${v}">${v}</span>`;
+        }
+        if (key === 'risk_score') {
+          style = n > 50 ? 'color:var(--red)' : n > 25 ? 'color:var(--amber)' : 'color:var(--green)';
+        }
+      }
+      html += `<td class="mono" style="${style}">${display}</td>`;
+    }
+    html += '</tr>';
+  }
+
+  html += '</tbody></table></div>';
+  document.getElementById('comparison-output').innerHTML = html;
+}
+</script>
+{% endblock %}

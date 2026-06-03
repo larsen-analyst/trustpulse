@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}TrustPulse{% endblock %}</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.27.0/plotly.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');
+
+:root {
+  --bg:           #0d1117;
+  --surface:      #161b22;
+  --surface2:     #1c2128;
+  --border:       #21262d;
+  --text:         #e6edf3;
+  --muted:        #7d8590;
+  --green:        #3fb950;
+  --green-dim:    #122d1a;
+  --amber:        #d29922;
+  --amber-dim:    #2d2208;
+  --red:          #f85149;
+  --red-dim:      #3d1111;
+  --blue:         #58a6ff;
+  --blue-dim:     #0d2045;
+  --accent:       #58a6ff;
+  --radius:       8px;
+  --shadow:       0 1px 3px rgba(0,0,0,0.4);
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg:        #f6f8fa;
+    --surface:   #ffffff;
+    --surface2:  #f6f8fa;
+    --border:    #d0d7de;
+    --text:      #1f2328;
+    --muted:     #656d76;
+    --green-dim: #dafbe1;
+    --amber-dim: #fff8c5;
+    --red-dim:   #ffebe9;
+    --blue-dim:  #ddf4ff;
+    --shadow:    0 1px 3px rgba(0,0,0,0.12);
+  }
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+/* Nav */
+nav {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 24px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.nav-brand {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text);
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.nav-brand span { color: var(--blue); }
+
+.nav-links {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+.nav-links a {
+  color: var(--muted);
+  text-decoration: none;
+  padding: 6px 12px;
+  border-radius: var(--radius);
+  font-size: 13px;
+  transition: color 0.15s, background 0.15s;
+}
+.nav-links a:hover, .nav-links a.active {
+  color: var(--text);
+  background: var(--surface2);
+}
+
+.nav-search {
+  position: relative;
+}
+.nav-search input {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 13px;
+  padding: 6px 12px 6px 32px;
+  width: 240px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.nav-search input:focus { border-color: var(--blue); }
+.nav-search input::placeholder { color: var(--muted); }
+.nav-search-icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted);
+  font-size: 13px;
+  pointer-events: none;
+}
+.search-results {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  max-height: 320px;
+  overflow-y: auto;
+  display: none;
+  z-index: 200;
+  box-shadow: var(--shadow);
+}
+.search-results.show { display: block; }
+.search-result-item {
+  padding: 8px 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 1px solid var(--border);
+}
+.search-result-item:last-child { border-bottom: none; }
+.search-result-item:hover { background: var(--surface2); }
+.search-result-name { font-size: 13px; flex: 1; }
+.search-result-code { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted); }
+
+/* Layout */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 32px 24px;
+}
+
+/* Page header */
+.page-header {
+  margin-bottom: 32px;
+}
+.page-header h1 {
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: -0.3px;
+}
+.page-header p {
+  color: var(--muted);
+  font-size: 13px;
+  margin-top: 4px;
+}
+
+/* Cards */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+}
+.card-title {
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+
+/* Stat cards */
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+}
+.stat-val {
+  font-size: 28px;
+  font-weight: 600;
+  font-family: 'DM Mono', monospace;
+  display: block;
+  letter-spacing: -1px;
+}
+.stat-lbl {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 4px;
+  display: block;
+}
+.stat-card.red   .stat-val { color: var(--red); }
+.stat-card.amber .stat-val { color: var(--amber); }
+.stat-card.green .stat-val { color: var(--green); }
+.stat-card.blue  .stat-val { color: var(--blue); }
+
+/* Grid layouts */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+
+/* RAG badges */
+.rag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+}
+.rag.Red    { background: var(--red-dim);   color: var(--red);   }
+.rag.Amber  { background: var(--amber-dim); color: var(--amber); }
+.rag.Green  { background: var(--green-dim); color: var(--green); }
+.rag.Unknown { background: var(--surface2); color: var(--muted); }
+.rag::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+
+/* Trend badges */
+.trend {
+  font-size: 11px;
+  font-family: 'DM Mono', monospace;
+  color: var(--muted);
+}
+.trend.Improving    { color: var(--green); }
+.trend.Deteriorating { color: var(--red); }
+.trend.Stable       { color: var(--amber); }
+
+/* Tables */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.data-table th {
+  text-align: left;
+  padding: 8px 12px;
+  color: var(--muted);
+  font-weight: 500;
+  border-bottom: 1px solid var(--border);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+.data-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+.data-table tr:last-child td { border-bottom: none; }
+.data-table tr:hover td { background: var(--surface2); }
+.data-table td a {
+  color: var(--blue);
+  text-decoration: none;
+  font-weight: 500;
+}
+.data-table td a:hover { text-decoration: underline; }
+
+/* Metric row */
+.metric-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+.metric-row:last-child { border-bottom: none; }
+.metric-name { font-size: 13px; color: var(--text); flex: 1; }
+.metric-val {
+  font-family: 'DM Mono', monospace;
+  font-size: 13px;
+  font-weight: 500;
+  min-width: 60px;
+  text-align: right;
+  margin-right: 12px;
+}
+.metric-null { color: var(--muted); font-style: italic; font-size: 12px; }
+
+/* Progress bar */
+.progress-bar-wrap { background: var(--border); border-radius: 3px; height: 4px; overflow: hidden; }
+.progress-bar-fill { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
+.fill-red   { background: var(--red); }
+.fill-amber { background: var(--amber); }
+.fill-green { background: var(--green); }
+.fill-blue  { background: var(--blue); }
+
+/* Mono text */
+.mono { font-family: 'DM Mono', monospace; font-size: 12px; }
+
+/* Flash messages */
+.flash { padding: 12px 16px; border-radius: var(--radius); margin-bottom: 16px; font-size: 13px; }
+.flash.error { background: var(--red-dim); color: var(--red); border: 1px solid var(--red); }
+
+/* Footer */
+footer {
+  border-top: 1px solid var(--border);
+  padding: 20px 24px;
+  margin-top: 60px;
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--muted);
+  font-family: 'DM Mono', monospace;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .stat-grid { grid-template-columns: repeat(2, 1fr); }
+  .grid-2, .grid-3 { grid-template-columns: 1fr; }
+  nav { padding: 0 16px; }
+  .nav-search { display: none; }
+  .container { padding: 20px 16px; }
+}
+</style>
+{% block extra_head %}{% endblock %}
+</head>
+<body>
+
+<nav>
+  <a href="/" class="nav-brand"><span>Trust</span>Pulse</a>
+  <div class="nav-links">
+    <a href="/" {% if request.endpoint == 'main.index' %}class="active"{% endif %}>Overview</a>
+    <a href="/compare" {% if request.endpoint == 'main.compare' %}class="active"{% endif %}>Compare</a>
+  </div>
+  <div class="nav-search">
+    <span class="nav-search-icon">⌕</span>
+    <input type="text" id="trust-search" placeholder="Search trusts..." autocomplete="off">
+    <div class="search-results" id="search-results"></div>
+  </div>
+</nav>
+
+<div class="container">
+  {% block content %}{% endblock %}
+</div>
+
+<footer>
+  <span>TrustPulse — Built on public NHS data only</span>
+  <span>Data: NHS England | CQC | NHS Oversight Framework</span>
+</footer>
+
+<script>
+// Trust search
+(function() {
+  let trusts = [];
+  const input  = document.getElementById('trust-search');
+  const results = document.getElementById('search-results');
+
+  fetch('/api/trusts')
+    .then(r => r.json())
+    .then(data => { trusts = data; });
+
+  input.addEventListener('input', function() {
+    const q = this.value.toLowerCase().trim();
+    if (q.length < 2) { results.classList.remove('show'); return; }
+    const matches = trusts
+      .filter(t => t.org_name?.toLowerCase().includes(q) || t.org_code?.toLowerCase().includes(q))
+      .slice(0, 8);
+    if (matches.length === 0) { results.classList.remove('show'); return; }
+    results.innerHTML = matches.map(t => `
+      <div class="search-result-item" onclick="window.location='/trust/${t.org_code}'">
+        <span class="rag ${t.risk_rag || 'Unknown'}"></span>
+        <span class="search-result-name">${t.org_name || t.org_code}</span>
+        <span class="search-result-code">${t.org_code}</span>
+      </div>
+    `).join('');
+    results.classList.add('show');
+  });
+
+  document.addEventListener('click', function(e) {
+    if (!input.contains(e.target) && !results.contains(e.target)) {
+      results.classList.remove('show');
+    }
+  });
+})();
+</script>
+
+{% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+
+{% block title %}TrustPulse — NHS Performance Overview{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+  <h1>NHS Trust Performance Overview</h1>
+  <p>
+    {{ stats.total_trusts }} trusts analysed
+    {% if stats.data_month %} &nbsp;·&nbsp; Data to {{ stats.data_month }}{% endif %}
+    &nbsp;·&nbsp; Public NHS data only
+  </p>
+</div>
+
+<!-- Stat cards -->
+<div class="stat-grid">
+  <div class="stat-card red">
+    <span class="stat-val">{{ stats.red_count }}</span>
+    <span class="stat-lbl">High risk trusts</span>
+  </div>
+  <div class="stat-card amber">
+    <span class="stat-val">{{ stats.amber_count }}</span>
+    <span class="stat-lbl">Medium risk trusts</span>
+  </div>
+  <div class="stat-card green">
+    <span class="stat-val">{{ stats.green_count }}</span>
+    <span class="stat-lbl">Low risk trusts</span>
+  </div>
+  <div class="stat-card blue">
+    <span class="stat-val">{{ stats.total_inefficiency or '—' }}</span>
+    <span class="stat-lbl">Est. annual inefficiency cost</span>
+  </div>
+</div>
+
+<!-- Charts row -->
+<div class="grid-2" style="margin-bottom:24px;">
+  <div class="card">
+    <div class="card-title">Risk distribution</div>
+    <div id="chart-risk-dist" style="height:260px;"></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Top 10 highest-risk trusts — composite score</div>
+    <div id="chart-top-risks" style="height:260px;"></div>
+  </div>
+</div>
+
+<!-- Top 10 table -->
+<div class="card">
+  <div class="card-title">Highest-risk trusts</div>
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Trust</th>
+        <th>Risk</th>
+        <th>Score</th>
+        <th>Red flags</th>
+        <th>A&amp;E 4hr %</th>
+        <th>Sickness %</th>
+        <th>Bed occ %</th>
+        <th>Est. annual cost</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for i, t in top10|enumerate %}
+      <tr>
+        <td class="mono" style="color:var(--muted);">{{ i+1 }}</td>
+        <td>
+          <a href="/trust/{{ t.org_code }}">{{ t.org_name or t.org_code }}</a>
+          <span class="mono" style="color:var(--muted); margin-left:6px;">{{ t.org_code }}</span>
+        </td>
+        <td><span class="rag {{ t.risk_rag or 'Unknown' }}">{{ t.risk_rag or '—' }}</span></td>
+        <td class="mono">{{ "%.1f"|format(t.risk_score) if t.risk_score else '—' }}</td>
+        <td class="mono" style="color:var(--red);">{{ t.red_flag_count or 0 }}</td>
+        <td class="mono">
+          {% if t.ae_pct_within_4hrs_type1_3m_avg %}
+            {{ "%.1f"|format(t.ae_pct_within_4hrs_type1_3m_avg) }}%
+          {% else %}—{% endif %}
+        </td>
+        <td class="mono">
+          {% if t.sickness_rate_pct_3m_avg %}
+            {{ "%.1f"|format(t.sickness_rate_pct_3m_avg) }}%
+          {% else %}—{% endif %}
+        </td>
+        <td class="mono">
+          {% if t.beds_ganda_occupancy_rate_3m_avg %}
+            {{ "%.1f"|format(t.beds_ganda_occupancy_rate_3m_avg) }}%
+          {% else %}—{% endif %}
+        </td>
+        <td class="mono">
+          {% if t.est_total_annual_inefficiency_cost_gbp %}
+            £{{ "{:,.0f}".format(t.est_total_annual_inefficiency_cost_gbp) }}
+          {% else %}—{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Risk distribution donut
+fetch('/api/risk-distribution')
+  .then(r => r.json())
+  .then(data => {
+    Plotly.newPlot('chart-risk-dist', [{
+      type: 'pie',
+      hole: 0.6,
+      labels: data.labels,
+      values: data.values,
+      marker: { colors: data.colors },
+      textinfo: 'label+value',
+      textfont: { family: 'DM Sans', size: 13 },
+      hovertemplate: '%{label}: %{value} trusts<extra></extra>',
+    }], {
+      paper_bgcolor: 'transparent',
+      plot_bgcolor:  'transparent',
+      showlegend: false,
+      margin: { t: 10, b: 10, l: 10, r: 10 },
+      font: { color: getComputedStyle(document.body).getPropertyValue('--text').trim() || '#e6edf3' },
+    }, { responsive: true, displayModeBar: false });
+  });
+
+// Top 10 bar chart
+fetch('/api/top-risks')
+  .then(r => r.json())
+  .then(data => {
+    const names  = data.map(t => (t.org_name || t.org_code).replace('NHS FOUNDATION TRUST','NHS FT').replace('NHS TRUST','NHS T').substring(0, 40));
+    const scores = data.map(t => t.risk_score || 0);
+    const colors = data.map(t => t.risk_rag === 'Red' ? '#f85149' : t.risk_rag === 'Amber' ? '#d29922' : '#3fb950');
+
+    Plotly.newPlot('chart-top-risks', [{
+      type: 'bar',
+      x: scores,
+      y: names,
+      orientation: 'h',
+      marker: { color: colors },
+      hovertemplate: '%{y}<br>Score: %{x}<extra></extra>',
+      text: scores.map(s => s.toFixed(1)),
+      textposition: 'outside',
+      textfont: { family: 'DM Mono', size: 11 },
+    }], {
+      paper_bgcolor: 'transparent',
+      plot_bgcolor:  'transparent',
+      xaxis: {
+        range: [0, 100],
+        gridcolor: 'rgba(255,255,255,0.06)',
+        tickfont: { family: 'DM Mono', size: 11 },
+      },
+      yaxis: {
+        automargin: true,
+        tickfont: { family: 'DM Sans', size: 11 },
+        autorange: 'reversed',
+      },
+      margin: { t: 10, b: 30, l: 10, r: 50 },
+      font: { color: getComputedStyle(document.body).getPropertyValue('--text').trim() || '#e6edf3' },
+    }, { responsive: true, displayModeBar: false });
+  });
+</script>
+{% endblock %}
