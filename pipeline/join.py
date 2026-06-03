@@ -173,63 +173,47 @@ def build_sickness_metrics():
     df["fte_days_available"] = pd.to_numeric(df["fte_days_available"], errors="coerce")
     df["fte_days_lost"]      = pd.to_numeric(df["fte_days_lost"], errors="coerce")
 
+    # Remove aggregate rows
+    df = df[~df["org_code"].str.lower().str.contains("all org", na=False)].copy()
+    df["fte_days_available"] = pd.to_numeric(df["fte_days_available"], errors="coerce")
+    df["fte_days_lost"]      = pd.to_numeric(df["fte_days_lost"],      errors="coerce")
+
     out_rows = []
 
     for (org, month), grp in df.groupby(["org_code", "month"]):
         row = {"org_code": org, "month": month}
 
-        # Overall rate — All Staff Groups, All Reasons
-        all_grp = grp[
-            (grp["staff_group"].str.lower().str.contains("all", na=False)) &
-            (grp["reason"].str.lower().str.contains("all", na=False))
-        ]
-        if len(all_grp) > 0:
-            avail = all_grp["fte_days_available"].sum()
-            lost  = all_grp["fte_days_lost"].sum()
-            row["sickness_rate_pct"]    = (lost / avail * 100) if avail > 0 else np.nan
-            row["fte_days_lost_total"]  = lost
-            row["fte_days_available_total"] = avail
+        # Overall rate — sum across ALL reason rows for this trust/month
+        # (no "All Reasons" summary row exists — must aggregate)
+        total_avail = grp["fte_days_available"].sum()
+        total_lost  = grp["fte_days_lost"].sum()
+        row["sickness_rate_pct"]         = (total_lost / total_avail * 100) if total_avail > 0 else np.nan
+        row["fte_days_lost_total"]        = total_lost
+        row["fte_days_available_total"]   = total_avail
 
-        # Anxiety/stress/depression
-        anxiety = grp[grp["reason"].str.lower().str.contains("anxiety|stress|depression", na=False)]
+        # Anxiety/stress/depression — S10
+        anxiety = grp[grp["reason"].str.startswith("S10", na=False)]
         if len(anxiety) > 0:
             avail = anxiety["fte_days_available"].sum()
             lost  = anxiety["fte_days_lost"].sum()
             row["sickness_rate_anxiety"] = (lost / avail * 100) if avail > 0 else np.nan
 
-        # Musculoskeletal
-        msk = grp[grp["reason"].str.lower().str.contains("musculo|back", na=False)]
+        # Musculoskeletal — S11 Back Problems + S12 Other musculoskeletal
+        msk = grp[grp["reason"].str.startswith("S11", na=False) |
+                  grp["reason"].str.startswith("S12", na=False)]
         if len(msk) > 0:
             avail = msk["fte_days_available"].sum()
             lost  = msk["fte_days_lost"].sum()
             row["sickness_rate_musculoskeletal"] = (lost / avail * 100) if avail > 0 else np.nan
 
-        # Infectious disease (COVID proxy)
-        covid = grp[grp["reason"].str.lower().str.contains("infect|cold|flu|covid", na=False)]
-        if len(covid) > 0:
-            avail = covid["fte_days_available"].sum()
-            lost  = covid["fte_days_lost"].sum()
+        # Infectious disease — S13 Cold Cough Flu
+        infectious = grp[grp["reason"].str.startswith("S13", na=False)]
+        if len(infectious) > 0:
+            avail = infectious["fte_days_available"].sum()
+            lost  = infectious["fte_days_lost"].sum()
             row["sickness_rate_infectious"] = (lost / avail * 100) if avail > 0 else np.nan
 
-        # Nursing and midwifery
-        nursing = grp[
-            grp["staff_group"].str.lower().str.contains("nurs|midwif", na=False) &
-            grp["reason"].str.lower().str.contains("all", na=False)
-        ]
-        if len(nursing) > 0:
-            avail = nursing["fte_days_available"].sum()
-            lost  = nursing["fte_days_lost"].sum()
-            row["sickness_nursing_rate"] = (lost / avail * 100) if avail > 0 else np.nan
-
-        # Medical and dental
-        medical = grp[
-            grp["staff_group"].str.lower().str.contains("medical|dental", na=False) &
-            grp["reason"].str.lower().str.contains("all", na=False)
-        ]
-        if len(medical) > 0:
-            avail = medical["fte_days_available"].sum()
-            lost  = medical["fte_days_lost"].sum()
-            row["sickness_medical_rate"] = (lost / avail * 100) if avail > 0 else np.nan
+        # NOTE: Only "All staff groups" exists — nursing/medical breakdown not available
 
         out_rows.append(row)
 
@@ -264,7 +248,7 @@ def build_workforce_metrics():
 
     if has_data_type:
         fte_df = df[df["data_type"].str.upper().str.contains("FTE", na=False)].copy()
-        hc_df  = df[df["data_type"].str.upper().str.contains("HEAD|HC", na=False)].copy()
+        hc_df  = df[df["data_type"].str.upper() == "HC"].copy()
     else:
         fte_df = df.copy()
         hc_df  = pd.DataFrame()
@@ -275,10 +259,10 @@ def build_workforce_metrics():
 
         row["workforce_total_fte"]   = grp["total"].sum()
 
-        nursing = grp[grp["staff_group"].str.lower().str.contains("nurs|midwif", na=False)]
+        nursing = grp[grp["staff_group"].isin(["Nurses & health visitors", "Midwives"])]
         row["workforce_nursing_fte"] = nursing["total"].sum() if len(nursing) > 0 else np.nan
 
-        medical = grp[grp["staff_group"].str.lower().str.contains("medical|dental", na=False)]
+        medical = grp[grp["staff_group"].isin(["HCHS Doctors"])]
         row["workforce_medical_fte"] = medical["total"].sum() if len(medical) > 0 else np.nan
 
         out_rows.append(row)
