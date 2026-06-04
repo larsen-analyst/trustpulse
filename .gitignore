@@ -1,6 +1,8 @@
 venv/ 
 data/raw/ 
-data/processed/ 
+data/processed/
+!data/processed/trust_risk_scores.csv
+!data/processed/trust_profiles.csv
 __pycache__/ 
 .ipynb_checkpoints/ 
 *.pyc
