@@ -382,7 +382,7 @@ def build_finance_metrics():
     scores = []
     for name in df["trust_name_clean"]:
         result = fuzz_process.extractOne(
-            name, choices, scorer=fuzz.token_sort_ratio, score_cutoff=60)
+            name, choices, scorer=fuzz.token_sort_ratio, score_cutoff=75)
         if result:
             matched_codes.append(name_to_code[result[0]])
             scores.append(result[1])
@@ -394,10 +394,7 @@ def build_finance_metrics():
     df["_match_score"] = scores
 
     n_matched = df["org_code"].notna().sum()
-    n_low = (df["_match_score"] < 75).sum()
-    print(f"  Finance     : {len(df)} provider rows | "
-          f"{n_matched} matched to org_code | "
-          f"{n_low} low-confidence matches (<75)")
+    print(f"  Finance     : {len(df)} provider rows | {n_matched} matched to org_code (score >= 75)")
 
     # Drop rows with no match
     df = df.dropna(subset=["org_code"]).copy()
