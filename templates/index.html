@@ -1,164 +1,375 @@
-{% extends "base.html" %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TrustPulse — NHS Performance Intelligence</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0d0f12;
+  --surface: #161a1f;
+  --surface2: #1e2328;
+  --border: #2a2f36;
+  --text: #e8eaed;
+  --muted: #7a8694;
+  --red: #ff4d4d;
+  --red-bg: rgba(255,77,77,0.10);
+  --amber: #ffb347;
+  --amber-bg: rgba(255,179,71,0.10);
+  --green: #3ddc84;
+  --green-bg: rgba(61,220,132,0.10);
+  --accent: #4d9fff;
+  --accent-bg: rgba(77,159,255,0.10);
+  --font-mono: 'DM Mono', monospace;
+  --font-sans: 'DM Sans', sans-serif;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: var(--font-sans); font-size: 14px; min-height: 100vh; }
 
-{% block title %}TrustPulse — NHS Performance Overview{% endblock %}
+/* Nav */
+nav { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 2rem; display: flex; align-items: center; height: 52px; gap: 2rem; position: sticky; top: 0; z-index: 100; }
+.nav-brand { font-family: var(--font-mono); font-size: 13px; font-weight: 500; color: var(--accent); letter-spacing: 0.05em; text-decoration: none; }
+.nav-links { display: flex; gap: 1.5rem; margin-left: auto; }
+.nav-links a { color: var(--muted); text-decoration: none; font-size: 13px; transition: color 0.15s; }
+.nav-links a:hover, .nav-links a.active { color: var(--text); }
+.nav-badge { font-family: var(--font-mono); font-size: 10px; padding: 2px 6px; background: var(--accent-bg); color: var(--accent); border-radius: 3px; border: 1px solid rgba(77,159,255,0.2); }
 
-{% block content %}
+/* Main layout */
+main { max-width: 1280px; margin: 0 auto; padding: 2rem; }
 
-<div class="page-header">
-  <h1>NHS Trust Performance Overview</h1>
-  <p>
-    {{ stats.total_trusts }} trusts analysed
-    {% if stats.data_month %} &nbsp;·&nbsp; Data to {{ stats.data_month }}{% endif %}
-    &nbsp;·&nbsp; Public NHS data only
-  </p>
-</div>
+/* Header */
+.page-header { margin-bottom: 2rem; }
+.page-header h1 { font-size: 22px; font-weight: 500; margin-bottom: 4px; }
+.page-header p { color: var(--muted); font-size: 13px; }
 
-<!-- Stat cards -->
-<div class="stat-grid">
-  <div class="stat-card red">
-    <span class="stat-val">{{ stats.red_count }}</span>
-    <span class="stat-lbl">High risk trusts</span>
-  </div>
-  <div class="stat-card amber">
-    <span class="stat-val">{{ stats.amber_count }}</span>
-    <span class="stat-lbl">Medium risk trusts</span>
-  </div>
-  <div class="stat-card green">
-    <span class="stat-val">{{ stats.green_count }}</span>
-    <span class="stat-lbl">Low risk trusts</span>
-  </div>
-  <div class="stat-card blue">
-    <span class="stat-val">{{ stats.total_inefficiency or '—' }}</span>
-    <span class="stat-lbl">Est. annual inefficiency cost</span>
-  </div>
-</div>
+/* Summary cards */
+.summary-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1rem; margin-bottom: 2rem; }
+.summary-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1.25rem; }
+.summary-card .label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; }
+.summary-card .value { font-family: var(--font-mono); font-size: 28px; font-weight: 500; line-height: 1; }
+.summary-card.red   .value { color: var(--red); }
+.summary-card.amber .value { color: var(--amber); }
+.summary-card.green .value { color: var(--green); }
+.summary-card.total .value { color: var(--text); }
+.summary-card.cost  .value { color: var(--accent); font-size: 22px; }
 
-<!-- Charts row -->
-<div class="grid-2" style="margin-bottom:24px;">
-  <div class="card">
-    <div class="card-title">Risk distribution</div>
-    <div id="chart-risk-dist" style="height:260px;"></div>
-  </div>
-  <div class="card">
-    <div class="card-title">Top 10 highest-risk trusts — composite score</div>
-    <div id="chart-top-risks" style="height:260px;"></div>
-  </div>
-</div>
+/* Section */
+.section { margin-bottom: 2.5rem; }
+.section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+.section-title { font-size: 13px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
 
-<!-- Top 10 table -->
-<div class="card">
-  <div class="card-title">Highest-risk trusts</div>
-  <table class="data-table">
-    <thead>
-      <tr>
-        <th>#</th>
-        <th>Trust</th>
-        <th>Risk</th>
-        <th>Score</th>
-        <th>Red flags</th>
-        <th>A&amp;E 4hr %</th>
-        <th>Sickness %</th>
-        <th>Bed occ %</th>
-        <th>Est. annual cost</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for i, t in top10|enumerate %}
-      <tr>
-        <td class="mono" style="color:var(--muted);">{{ i+1 }}</td>
-        <td>
-          <a href="/trust/{{ t.org_code }}">{{ t.org_name or t.org_code }}</a>
-          <span class="mono" style="color:var(--muted); margin-left:6px;">{{ t.org_code }}</span>
-        </td>
-        <td><span class="rag {{ t.risk_rag or 'Unknown' }}">{{ t.risk_rag or '—' }}</span></td>
-        <td class="mono">{{ "%.1f"|format(t.risk_score) if t.risk_score else '—' }}</td>
-        <td class="mono" style="color:var(--red);">{{ t.red_flag_count or 0 }}</td>
-        <td class="mono">
-          {% if t.ae_pct_within_4hrs_type1_3m_avg %}
-            {{ "%.1f"|format(t.ae_pct_within_4hrs_type1_3m_avg) }}%
-          {% else %}—{% endif %}
-        </td>
-        <td class="mono">
-          {% if t.sickness_rate_pct_3m_avg %}
-            {{ "%.1f"|format(t.sickness_rate_pct_3m_avg) }}%
-          {% else %}—{% endif %}
-        </td>
-        <td class="mono">
-          {% if t.beds_ganda_occupancy_rate_3m_avg %}
-            {{ "%.1f"|format(t.beds_ganda_occupancy_rate_3m_avg) }}%
-          {% else %}—{% endif %}
-        </td>
-        <td class="mono">
-          {% if t.est_total_annual_inefficiency_cost_gbp %}
-            £{{ "{:,.0f}".format(t.est_total_annual_inefficiency_cost_gbp) }}
-          {% else %}—{% endif %}
-        </td>
-      </tr>
+/* Filters */
+.filters { display: flex; gap: 0.75rem; margin-bottom: 1.25rem; flex-wrap: wrap; align-items: center; }
+.filter-input { background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 7px 12px; border-radius: 6px; font-family: var(--font-sans); font-size: 13px; outline: none; transition: border-color 0.15s; }
+.filter-input:focus { border-color: var(--accent); }
+select.filter-input { cursor: pointer; min-width: 140px; }
+.filter-label { font-size: 12px; color: var(--muted); }
+#trust-count { font-family: var(--font-mono); font-size: 12px; color: var(--muted); margin-left: auto; }
+
+/* Table */
+.table-wrap { overflow-x: auto; border-radius: 8px; border: 1px solid var(--border); }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+thead tr { background: var(--surface2); }
+th { padding: 10px 14px; text-align: left; font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); white-space: nowrap; cursor: pointer; user-select: none; border-bottom: 1px solid var(--border); }
+th:hover { color: var(--text); }
+th.sorted-asc::after  { content: " ↑"; color: var(--accent); }
+th.sorted-desc::after { content: " ↓"; color: var(--accent); }
+tbody tr { border-bottom: 1px solid var(--border); transition: background 0.1s; }
+tbody tr:last-child { border-bottom: none; }
+tbody tr:hover { background: var(--surface2); }
+td { padding: 10px 14px; white-space: nowrap; }
+td.trust-name { max-width: 280px; overflow: hidden; text-overflow: ellipsis; }
+td.trust-name a { color: var(--text); text-decoration: none; font-weight: 500; }
+td.trust-name a:hover { color: var(--accent); }
+td.mono { font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+td.score { font-family: var(--font-mono); font-weight: 500; }
+
+/* RAG badges */
+.rag { display: inline-block; padding: 2px 8px; border-radius: 3px; font-family: var(--font-mono); font-size: 11px; font-weight: 500; }
+.rag-red    { background: var(--red-bg);   color: var(--red);   border: 1px solid rgba(255,77,77,0.2); }
+.rag-amber  { background: var(--amber-bg); color: var(--amber); border: 1px solid rgba(255,179,71,0.2); }
+.rag-green  { background: var(--green-bg); color: var(--green); border: 1px solid rgba(61,220,132,0.2); }
+.rag-unknown { background: var(--surface2); color: var(--muted); border: 1px solid var(--border); }
+
+/* Domain dots */
+.domain-dots { display: flex; gap: 3px; }
+.dot { width: 8px; height: 8px; border-radius: 2px; }
+.dot-Red    { background: var(--red); }
+.dot-Amber  { background: var(--amber); }
+.dot-Green  { background: var(--green); }
+.dot-Unknown { background: var(--border); }
+
+/* Top 10 cards */
+.top10-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; }
+.trust-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1.25rem; transition: border-color 0.15s; text-decoration: none; display: block; }
+.trust-card:hover { border-color: var(--accent); }
+.trust-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+.trust-card-name { font-size: 13px; font-weight: 500; color: var(--text); line-height: 1.4; }
+.trust-card-code { font-family: var(--font-mono); font-size: 11px; color: var(--muted); margin-top: 2px; }
+.trust-card-score { font-family: var(--font-mono); font-size: 24px; font-weight: 500; color: var(--red); }
+.trust-card-meta { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+.meta-pill { font-size: 11px; padding: 2px 7px; background: var(--surface2); border-radius: 3px; color: var(--muted); }
+
+/* Pagination */
+.pagination { display: flex; gap: 4px; margin-top: 1rem; align-items: center; justify-content: flex-end; }
+.page-btn { background: var(--surface); border: 1px solid var(--border); color: var(--muted); padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; font-family: var(--font-mono); transition: all 0.15s; }
+.page-btn:hover, .page-btn.active { border-color: var(--accent); color: var(--accent); }
+.page-info { font-size: 12px; color: var(--muted); font-family: var(--font-mono); margin-right: auto; }
+
+/* Error */
+.error-box { background: var(--red-bg); border: 1px solid rgba(255,77,77,0.3); border-radius: 8px; padding: 1.5rem; color: var(--red); }
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-brand" href="/">TRUSTPULSE</a>
+  <span class="nav-badge">NHS Performance Intelligence</span>
+  <div class="nav-links">
+    <a href="/" class="active">Dashboard</a>
+    <a href="/compare">Compare</a>
+  </div>
+</nav>
+
+<main>
+  {% if error %}
+  <div class="error-box">{{ error }}</div>
+  {% else %}
+
+  <div class="page-header">
+    <h1>NHS Trust Risk Dashboard</h1>
+    <p>{{ n_total }} trusts scored — data through {{ data_month }} — composite scores calculated from 5 NHS oversight domains</p>
+  </div>
+
+  <!-- Summary cards -->
+  <div class="summary-grid">
+    <div class="summary-card red">
+      <div class="label">Red Risk</div>
+      <div class="value">{{ n_red }}</div>
+    </div>
+    <div class="summary-card amber">
+      <div class="label">Amber Risk</div>
+      <div class="value">{{ n_amber }}</div>
+    </div>
+    <div class="summary-card green">
+      <div class="label">Green / Stable</div>
+      <div class="value">{{ n_green }}</div>
+    </div>
+    <div class="summary-card total">
+      <div class="label">Trusts Scored</div>
+      <div class="value">{{ n_total }}</div>
+    </div>
+    <div class="summary-card cost">
+      <div class="label">Est. Annual Inefficiency</div>
+      <div class="value">£{{ total_cost_bn }}bn</div>
+    </div>
+  </div>
+
+  <!-- Top 10 -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-title">Highest Risk Trusts</span>
+    </div>
+    <div class="top10-grid">
+      {% for t in top10 %}
+      <a class="trust-card" href="/trust/{{ t.org_code }}">
+        <div class="trust-card-header">
+          <div>
+            <div class="trust-card-name">{{ t.org_name or t.org_code }}</div>
+            <div class="trust-card-code">{{ t.org_code }}</div>
+          </div>
+          <div class="trust-card-score">{{ "%.0f"|format(t.composite_score or 0) }}</div>
+        </div>
+        <div class="trust-card-meta">
+          <span class="rag rag-{{ t.overall_rag|lower if t.overall_rag else 'unknown' }}">{{ t.overall_rag or "?" }}</span>
+          {% if t.Region %}<span class="meta-pill">{{ t.Region }}</span>{% endif %}
+          {% if t.red_flag_count %}<span class="meta-pill">{{ t.red_flag_count }} red flags</span>{% endif %}
+        </div>
+      </a>
       {% endfor %}
-    </tbody>
-  </table>
-</div>
+    </div>
+  </div>
 
-{% endblock %}
+  <!-- Full trust table -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-title">All Trusts</span>
+    </div>
 
-{% block scripts %}
+    <div class="filters">
+      <input class="filter-input" type="text" id="search" placeholder="Search trust name or code…" style="width:260px">
+      <select class="filter-input" id="filter-rag">
+        <option value="">All RAG</option>
+        <option value="Red">Red</option>
+        <option value="Amber">Amber</option>
+        <option value="Green">Green</option>
+      </select>
+      <select class="filter-input" id="filter-region">
+        <option value="">All Regions</option>
+        {% for r in regions %}<option value="{{ r }}">{{ r }}</option>{% endfor %}
+      </select>
+      <span id="trust-count"></span>
+    </div>
+
+    <div class="table-wrap">
+      <table id="trust-table">
+        <thead>
+          <tr>
+            <th data-col="org_code">Code</th>
+            <th data-col="org_name">Trust Name</th>
+            <th data-col="Region">Region</th>
+            <th data-col="overall_rag">Overall</th>
+            <th data-col="composite_score">Score</th>
+            <th>Domains</th>
+            <th data-col="red_flag_count">Red Flags</th>
+            <th data-col="est_annual_inefficiency_gbp">Est. Annual Cost</th>
+          </tr>
+        </thead>
+        <tbody id="trust-tbody"></tbody>
+      </table>
+    </div>
+    <div class="pagination">
+      <span class="page-info" id="page-info"></span>
+      <button class="page-btn" id="prev-btn" onclick="changePage(-1)">‹ Prev</button>
+      <span id="page-buttons"></span>
+      <button class="page-btn" id="next-btn" onclick="changePage(1)">Next ›</button>
+    </div>
+  </div>
+
+  {% endif %}
+</main>
+
 <script>
-// Risk distribution donut
-fetch('/api/risk-distribution')
-  .then(r => r.json())
-  .then(data => {
-    Plotly.newPlot('chart-risk-dist', [{
-      type: 'pie',
-      hole: 0.6,
-      labels: data.labels,
-      values: data.values,
-      marker: { colors: data.colors },
-      textinfo: 'label+value',
-      textfont: { family: 'DM Sans', size: 13 },
-      hovertemplate: '%{label}: %{value} trusts<extra></extra>',
-    }], {
-      paper_bgcolor: 'transparent',
-      plot_bgcolor:  'transparent',
-      showlegend: false,
-      margin: { t: 10, b: 10, l: 10, r: 10 },
-      font: { color: getComputedStyle(document.body).getPropertyValue('--text').trim() || '#e6edf3' },
-    }, { responsive: true, displayModeBar: false });
+const RAW_DATA = {{ table_data|safe }};
+let filtered = [...RAW_DATA];
+let sortCol = "composite_score";
+let sortDir = -1;  // -1 = descending
+let page = 1;
+const PAGE_SIZE = 25;
+
+function ragClass(r) {
+  return r === "Red" ? "rag-red" : r === "Amber" ? "rag-amber" : r === "Green" ? "rag-green" : "rag-unknown";
+}
+
+function domainDots(row) {
+  return ['d1_rag','d2_rag','d3_rag','d4_rag','d5_rag'].map(d => {
+    const v = row[d] || "Unknown";
+    return `<div class="dot dot-${v}" title="${d.toUpperCase().replace('_RAG','')}: ${v}"></div>`;
+  }).join('');
+}
+
+function fmtCost(v) {
+  if (!v) return '<span style="color:var(--muted)">—</span>';
+  if (v >= 1e9) return `£${(v/1e9).toFixed(1)}bn`;
+  if (v >= 1e6) return `£${(v/1e6).toFixed(1)}m`;
+  if (v >= 1e3) return `£${(v/1e3).toFixed(0)}k`;
+  return `£${v.toFixed(0)}`;
+}
+
+function applyFilters() {
+  const search = document.getElementById('search').value.toLowerCase();
+  const rag    = document.getElementById('filter-rag').value;
+  const region = document.getElementById('filter-region').value;
+
+  filtered = RAW_DATA.filter(t => {
+    const name = (t.org_name || '').toLowerCase();
+    const code = (t.org_code || '').toLowerCase();
+    if (search && !name.includes(search) && !code.includes(search)) return false;
+    if (rag    && t.overall_rag !== rag)    return false;
+    if (region && t.Region      !== region) return false;
+    return true;
   });
 
-// Top 10 bar chart
-fetch('/api/top-risks')
-  .then(r => r.json())
-  .then(data => {
-    const names  = data.map(t => (t.org_name || t.org_code).replace('NHS FOUNDATION TRUST','NHS FT').replace('NHS TRUST','NHS T').substring(0, 40));
-    const scores = data.map(t => t.risk_score || 0);
-    const colors = data.map(t => t.risk_rag === 'Red' ? '#f85149' : t.risk_rag === 'Amber' ? '#d29922' : '#3fb950');
-
-    Plotly.newPlot('chart-top-risks', [{
-      type: 'bar',
-      x: scores,
-      y: names,
-      orientation: 'h',
-      marker: { color: colors },
-      hovertemplate: '%{y}<br>Score: %{x}<extra></extra>',
-      text: scores.map(s => s.toFixed(1)),
-      textposition: 'outside',
-      textfont: { family: 'DM Mono', size: 11 },
-    }], {
-      paper_bgcolor: 'transparent',
-      plot_bgcolor:  'transparent',
-      xaxis: {
-        range: [0, 100],
-        gridcolor: 'rgba(255,255,255,0.06)',
-        tickfont: { family: 'DM Mono', size: 11 },
-      },
-      yaxis: {
-        automargin: true,
-        tickfont: { family: 'DM Sans', size: 11 },
-        autorange: 'reversed',
-      },
-      margin: { t: 10, b: 30, l: 10, r: 50 },
-      font: { color: getComputedStyle(document.body).getPropertyValue('--text').trim() || '#e6edf3' },
-    }, { responsive: true, displayModeBar: false });
+  // Sort
+  filtered.sort((a, b) => {
+    let av = a[sortCol], bv = b[sortCol];
+    if (av == null) return 1;
+    if (bv == null) return -1;
+    if (typeof av === 'string') return sortDir * av.localeCompare(bv);
+    return sortDir * (av - bv);
   });
+
+  page = 1;
+  render();
+}
+
+function render() {
+  const total = filtered.length;
+  const start = (page - 1) * PAGE_SIZE;
+  const end   = Math.min(start + PAGE_SIZE, total);
+  const slice = filtered.slice(start, end);
+
+  document.getElementById('trust-count').textContent = `${total} trusts`;
+  document.getElementById('page-info').textContent = `${start+1}–${end} of ${total}`;
+
+  const tbody = document.getElementById('trust-tbody');
+  tbody.innerHTML = slice.map(t => `
+    <tr>
+      <td class="mono">${t.org_code || ''}</td>
+      <td class="trust-name"><a href="/trust/${t.org_code}">${t.org_name || t.org_code}</a></td>
+      <td style="color:var(--muted);font-size:12px">${t.Region || '—'}</td>
+      <td><span class="rag ${ragClass(t.overall_rag)}">${t.overall_rag || '?'}</span></td>
+      <td class="score" style="color:${t.overall_rag==='Red'?'var(--red)':t.overall_rag==='Amber'?'var(--amber)':'var(--green)'}">
+        ${t.composite_score != null ? t.composite_score.toFixed(1) : '—'}
+      </td>
+      <td><div class="domain-dots">${domainDots(t)}</div></td>
+      <td class="mono" style="color:${(t.red_flag_count||0)>=5?'var(--red)':'var(--muted)'}">
+        ${t.red_flag_count != null ? t.red_flag_count : '—'}
+      </td>
+      <td class="mono" style="color:var(--accent)">${fmtCost(t.est_annual_inefficiency_gbp)}</td>
+    </tr>
+  `).join('');
+
+  renderPagination(total);
+  renderSortHeaders();
+}
+
+function renderPagination(total) {
+  const nPages = Math.ceil(total / PAGE_SIZE);
+  const btns = document.getElementById('page-buttons');
+  let html = '';
+  const start = Math.max(1, page - 2);
+  const end   = Math.min(nPages, page + 2);
+  for (let i = start; i <= end; i++) {
+    html += `<button class="page-btn${i===page?' active':''}" onclick="goPage(${i})">${i}</button>`;
+  }
+  btns.innerHTML = html;
+  document.getElementById('prev-btn').disabled = page === 1;
+  document.getElementById('next-btn').disabled = page === nPages;
+}
+
+function renderSortHeaders() {
+  document.querySelectorAll('th[data-col]').forEach(th => {
+    th.classList.remove('sorted-asc','sorted-desc');
+    if (th.dataset.col === sortCol) {
+      th.classList.add(sortDir === 1 ? 'sorted-asc' : 'sorted-desc');
+    }
+  });
+}
+
+function goPage(n) { page = n; render(); }
+function changePage(d) { page = Math.max(1, page + d); render(); }
+
+// Sort on header click
+document.querySelectorAll('th[data-col]').forEach(th => {
+  th.addEventListener('click', () => {
+    if (sortCol === th.dataset.col) {
+      sortDir *= -1;
+    } else {
+      sortCol = th.dataset.col;
+      sortDir = th.dataset.col === 'composite_score' || th.dataset.col === 'red_flag_count' ? -1 : 1;
+    }
+    applyFilters();
+  });
+});
+
+document.getElementById('search').addEventListener('input',  applyFilters);
+document.getElementById('filter-rag').addEventListener('change', applyFilters);
+document.getElementById('filter-region').addEventListener('change', applyFilters);
+
+// Initial render
+applyFilters();
 </script>
-{% endblock %}
+</body>
+</html>
