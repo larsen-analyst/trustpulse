@@ -81,7 +81,7 @@ def build_ae_metrics(ae):
 
 
 def build_sickness_metrics():
-    df = pd.read_csv(SICKNESS_PATH, parse_dates=["date"])
+    df = pd.read_csv(SICKNESS_PATH, parse_dates=["date"], dayfirst=True)
     df["month"] = df["date"].dt.to_period("M").dt.to_timestamp()
 
     # Aggregate to one row per org per month

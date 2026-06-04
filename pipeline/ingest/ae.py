@@ -152,7 +152,13 @@ def ingest_ae():
     # 9. Ensure processed directory exists
     os.makedirs(PROCESSED_DIR, exist_ok=True)
 
-    # 10. Save output
+    # 10. Drop junk columns (unnamed trailing columns from source Excel)
+    junk_cols = [c for c in raw.columns if c.startswith('unnamed') or c.strip() == 'a']
+    if junk_cols:
+        raw = raw.drop(columns=junk_cols)
+        print(f'Dropped {len(junk_cols)} junk columns: {junk_cols}')
+
+    # 11. Save output
     raw.to_csv(OUTPUT_FILE, index=False)
     print(f"\nSaved: {OUTPUT_FILE}")
 
