@@ -27,6 +27,7 @@ VACANCIES_PATH       = DATA_DIR / "vacancies_clean.csv"
 STAFF_SURVEY_PATH    = DATA_DIR / "staff_survey_clean.csv"
 FINANCE_PATH         = DATA_DIR / "finance_clean.csv"
 AMBULANCE_PATH       = DATA_DIR / "ambulance_clean.csv"
+OUTPATIENTS_PATH     = DATA_DIR / "outpatients_clean.csv"
 
 MASTER_OUT   = DATA_DIR / "trust_master.csv"
 PROFILES_OUT = DATA_DIR / "trust_profiles.csv"
@@ -458,6 +459,29 @@ def build_ambulance_metrics():
 # Main join
 # ---------------------------------------------------------------------------
 
+def build_outpatients_metrics():
+    """
+    Load outpatients_clean.csv -- annual DNA and cancellation rates per trust.
+    Uses most recent year (2024-25) as a snapshot join on org_code.
+    """
+    if not OUTPATIENTS_PATH.exists():
+        print("  [WARNING] outpatients_clean.csv not found -- skipping")
+        return pd.DataFrame()
+    df = pd.read_csv(OUTPATIENTS_PATH, dtype={"org_code": str})
+    if "financial_year" in df.columns:
+        latest_year = df["financial_year"].max()
+        df = df[df["financial_year"] == latest_year].copy()
+        print(f"  Outpatients : {len(df)} providers | year {latest_year}")
+    keep = ["org_code", "total_attended", "total_dna", "total_patient_cancelled",
+            "total_hospital_cancelled", "total_appointments",
+            "dna_rate", "hospital_cancellation_rate", "patient_cancellation_rate"]
+    keep = [c for c in keep if c in df.columns]
+    df = df[keep].copy()
+    rename = {c: f"outp_{c}" for c in keep if c != "org_code"}
+    df = df.rename(columns=rename)
+    return df
+
+
 def run():
     print("[join] Starting master join...")
 
@@ -479,6 +503,7 @@ def run():
     vacancy_metrics    = build_vacancy_metrics()
     finance_metrics    = build_finance_metrics()
     ambulance_metrics  = build_ambulance_metrics()
+    outpatients_metrics = build_outpatients_metrics()
 
     # ---------------------------------------------------------------------------
     # Join time series datasets onto spine (left join -- keeps all spine rows)
@@ -532,6 +557,10 @@ def run():
             "workforce_nursing_fte"].diff()
 
     # ---------------------------------------------------------------------------
+
+    if not outpatients_metrics.empty:
+        master = master.merge(outpatients_metrics, on="org_code", how="left")
+        print(f"  After outpatients join: {master.shape}")
     # Join snapshot datasets
     # ---------------------------------------------------------------------------
     print("\n[join] Joining snapshot datasets...")
