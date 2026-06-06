@@ -28,6 +28,7 @@ STAFF_SURVEY_PATH    = DATA_DIR / "staff_survey_clean.csv"
 FINANCE_PATH         = DATA_DIR / "finance_clean.csv"
 AMBULANCE_PATH       = DATA_DIR / "ambulance_clean.csv"
 OUTPATIENTS_PATH     = DATA_DIR / "outpatients_clean.csv"
+SICKNESS_DETAIL_PATH = DATA_DIR / "sickness_detail_clean.csv"
 
 MASTER_OUT   = DATA_DIR / "trust_master.csv"
 PROFILES_OUT = DATA_DIR / "trust_profiles.csv"
@@ -482,6 +483,23 @@ def build_outpatients_metrics():
     return df
 
 
+def build_sickness_detail_metrics():
+    """
+    Load sickness_detail_clean.csv -- staff group breakdown and reason analysis.
+    Monthly time series join on org_code and month.
+    """
+    if not SICKNESS_DETAIL_PATH.exists():
+        print("  [WARNING] sickness_detail_clean.csv not found -- skipping")
+        return pd.DataFrame()
+    df = pd.read_csv(SICKNESS_DETAIL_PATH, parse_dates=["period_date"])
+    df["month"] = df["period_date"].dt.to_period("M").dt.to_timestamp()
+    keep = ["org_code", "month"] + [c for c in df.columns
+            if c not in ("org_code", "org_name", "period_date", "month", "total_fte_lost")]
+    df = df[[c for c in keep if c in df.columns]].copy()
+    print(f"  Sickness detail: {len(df):,} rows | {df['org_code'].nunique()} orgs")
+    return df
+
+
 def run():
     print("[join] Starting master join...")
 
@@ -504,6 +522,7 @@ def run():
     finance_metrics    = build_finance_metrics()
     ambulance_metrics  = build_ambulance_metrics()
     outpatients_metrics = build_outpatients_metrics()
+    sickness_detail_metrics = build_sickness_detail_metrics()
 
     # ---------------------------------------------------------------------------
     # Join time series datasets onto spine (left join -- keeps all spine rows)
@@ -563,6 +582,11 @@ def run():
         print(f"  After outpatients join: {master.shape}")
     # Join snapshot datasets
     # ---------------------------------------------------------------------------
+
+    if not sickness_detail_metrics.empty:
+        sickness_detail_metrics["month"] = pd.to_datetime(sickness_detail_metrics["month"])
+        master = master.merge(sickness_detail_metrics, on=["org_code", "month"], how="left")
+        print(f"  After sickness detail join: {master.shape}")
     print("\n[join] Joining snapshot datasets...")
 
     master = master.merge(cqc_metrics,       on="org_code", how="left")
