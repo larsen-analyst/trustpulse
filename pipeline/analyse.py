@@ -418,6 +418,10 @@ def apply_rags(df):
     df["rag_cdiff"] = safe_col(df, "cdiff_infection_rate").apply(
         lambda v: rag_threshold(v, "high", 0.30, 0.15))
 
+    # DNA rate -- outpatients, annual snapshot. Red > 15%, Amber > 8%
+    df["rag_dna_rate"] = safe_col(df, "outp_dna_rate").apply(
+        lambda v: rag_threshold(v, "high", 0.15, 0.08))
+
     return df
 
 
@@ -466,12 +470,14 @@ def domain_scores(df):
     d5_dtoc   = df["rag_delayed_discharge"].apply(rs)
     d5_canc   = df["rag_cancelled_ops"].apply(rs)
     d5_cdiff  = df["rag_cdiff"].apply(rs)
+    d5_dna    = df["rag_dna_rate"].apply(rs)
     df["d5_score"] = (
-        d5_cqc   * 0.30 +
-        d5_beds  * 0.25 +
+        d5_cqc   * 0.25 +
+        d5_beds  * 0.20 +
         d5_dtoc  * 0.20 +
         d5_canc  * 0.15 +
-        d5_cdiff * 0.10
+        d5_cdiff * 0.10 +
+        d5_dna   * 0.10
     ).clip(0, 100).round(1)
 
     # Domain RAG
@@ -568,6 +574,11 @@ def add_cost_estimates(df):
         "est_annual_cancelled_ops_gbp",
         "est_annual_sickness_gbp",
     ] if c in df.columns]
+    # DNA cost -- outpatients only, annual data. Cost per missed appointment: GBP 120
+    dna_col = "outp_total_dna"
+    if dna_col in df.columns:
+        df["est_annual_dna_cost_gbp"] = (safe_col(df, dna_col) * 120).round(0)
+
     df["est_annual_inefficiency_gbp"] = df[cost_cols].sum(axis=1, min_count=1).round(0)
 
     return df
