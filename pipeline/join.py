@@ -29,6 +29,7 @@ FINANCE_PATH         = DATA_DIR / "finance_clean.csv"
 AMBULANCE_PATH       = DATA_DIR / "ambulance_clean.csv"
 OUTPATIENTS_PATH     = DATA_DIR / "outpatients_clean.csv"
 SICKNESS_DETAIL_PATH = DATA_DIR / "sickness_detail_clean.csv"
+SHMI_PATH            = DATA_DIR / "shmi_clean.csv"
 
 MASTER_OUT   = DATA_DIR / "trust_master.csv"
 PROFILES_OUT = DATA_DIR / "trust_profiles.csv"
@@ -500,6 +501,27 @@ def build_sickness_detail_metrics():
     return df
 
 
+def build_shmi_metrics():
+    """
+    Load shmi_clean.csv -- SHMI mortality indicator per trust per 12-month period.
+    Snapshot join using the latest available period per trust.
+    SHMI is a smoke alarm signal, not a direct quality measure.
+    """
+    if not SHMI_PATH.exists():
+        print("  [WARNING] shmi_clean.csv not found -- skipping")
+        return pd.DataFrame()
+    df = pd.read_csv(SHMI_PATH, parse_dates=["period_start", "period_end"])
+    # Use latest period per trust
+    df = df.sort_values("period_start", ascending=False)
+    df = df.drop_duplicates(subset=["org_code"], keep="first")
+    keep = ["org_code", "shmi_value", "shmi_banding", "shmi_banding_label",
+            "spells", "observed_deaths", "expected_deaths", "palliative_pct"]
+    keep = [c for c in keep if c in df.columns]
+    df = df[keep].copy()
+    print(f"  SHMI            : {len(df)} trusts | latest period snapshot")
+    return df
+
+
 def run():
     print("[join] Starting master join...")
 
@@ -523,6 +545,7 @@ def run():
     ambulance_metrics  = build_ambulance_metrics()
     outpatients_metrics = build_outpatients_metrics()
     sickness_detail_metrics = build_sickness_detail_metrics()
+    shmi_metrics        = build_shmi_metrics()
 
     # ---------------------------------------------------------------------------
     # Join time series datasets onto spine (left join -- keeps all spine rows)
@@ -588,6 +611,10 @@ def run():
         master = master.merge(sickness_detail_metrics, on=["org_code", "month"], how="left")
         print(f"  After sickness detail join: {master.shape}")
     print("\n[join] Joining snapshot datasets...")
+
+    if not shmi_metrics.empty:
+        master = master.merge(shmi_metrics, on="org_code", how="left")
+        print(f"  After SHMI join: {master.shape}")
 
     master = master.merge(cqc_metrics,       on="org_code", how="left")
     master = master.merge(oversight_metrics,  on="org_code", how="left")
