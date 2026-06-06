@@ -422,6 +422,19 @@ def apply_rags(df):
     df["rag_dna_rate"] = safe_col(df, "outp_dna_rate").apply(
         lambda v: rag_threshold(v, "high", 0.15, 0.08))
 
+
+    # SHMI banding -- smoke alarm signal, not direct quality measure
+    def shmi_rag(v):
+        if pd.isna(v) or str(v).strip() == "":
+            return "Unknown"
+        v = str(v)
+        if "Higher" in v:
+            return "Red"
+        if "Lower" in v:
+            return "Green"
+        return "Amber"
+    df["rag_shmi"] = safe_col(df, "shmi_banding_label").apply(shmi_rag)
+
     return df
 
 
@@ -471,13 +484,15 @@ def domain_scores(df):
     d5_canc   = df["rag_cancelled_ops"].apply(rs)
     d5_cdiff  = df["rag_cdiff"].apply(rs)
     d5_dna    = df["rag_dna_rate"].apply(rs)
+    d5_shmi   = df["rag_shmi"].apply(rs)
     df["d5_score"] = (
-        d5_cqc   * 0.25 +
-        d5_beds  * 0.20 +
-        d5_dtoc  * 0.20 +
+        d5_shmi  * 0.20 +
+        d5_cqc   * 0.20 +
+        d5_beds  * 0.15 +
+        d5_dtoc  * 0.15 +
         d5_canc  * 0.15 +
-        d5_cdiff * 0.10 +
-        d5_dna   * 0.10
+        d5_cdiff * 0.08 +
+        d5_dna   * 0.07
     ).clip(0, 100).round(1)
 
     # Domain RAG
