@@ -30,6 +30,7 @@ AMBULANCE_PATH       = DATA_DIR / "ambulance_clean.csv"
 OUTPATIENTS_PATH     = DATA_DIR / "outpatients_clean.csv"
 SICKNESS_DETAIL_PATH = DATA_DIR / "sickness_detail_clean.csv"
 SHMI_PATH            = DATA_DIR / "shmi_clean.csv"
+CANCER_WAITING_PATH  = DATA_DIR / "cancer_waiting_clean.csv"
 
 MASTER_OUT   = DATA_DIR / "trust_master.csv"
 PROFILES_OUT = DATA_DIR / "trust_profiles.csv"
@@ -522,6 +523,24 @@ def build_shmi_metrics():
     return df
 
 
+def build_cancer_waiting_metrics():
+    """
+    Load cancer_waiting_clean.csv -- monthly FDS and 62-day performance per trust.
+    Monthly time series join on org_code and month.
+    """
+    if not CANCER_WAITING_PATH.exists():
+        print("  [WARNING] cancer_waiting_clean.csv not found -- skipping")
+        return pd.DataFrame()
+    df = pd.read_csv(CANCER_WAITING_PATH, parse_dates=["period_date"])
+    df["month"] = df["period_date"].dt.to_period("M").dt.to_timestamp()
+    keep = ["org_code", "month", "fds_total", "fds_within", "fds_performance",
+            "t62d_total", "t62d_within", "t62d_performance"]
+    keep = [c for c in keep if c in df.columns]
+    df = df[[c for c in keep]].copy()
+    print(f"  Cancer waiting : {len(df):,} rows | {df['org_code'].nunique()} trusts")
+    return df
+
+
 def run():
     print("[join] Starting master join...")
 
@@ -546,6 +565,7 @@ def run():
     outpatients_metrics = build_outpatients_metrics()
     sickness_detail_metrics = build_sickness_detail_metrics()
     shmi_metrics        = build_shmi_metrics()
+    cancer_waiting_metrics = build_cancer_waiting_metrics()
 
     # ---------------------------------------------------------------------------
     # Join time series datasets onto spine (left join -- keeps all spine rows)
@@ -615,6 +635,14 @@ def run():
     if not shmi_metrics.empty:
         master = master.merge(shmi_metrics, on="org_code", how="left")
         print(f"  After SHMI join: {master.shape}")
+
+    if not cancer_waiting_metrics.empty:
+        cancer_waiting_metrics["month"] = pd.to_datetime(cancer_waiting_metrics["month"])
+        # Deduplicate to one row per org_code per month before joining
+        cancer_waiting_metrics = cancer_waiting_metrics.drop_duplicates(
+            subset=["org_code", "month"], keep="first")
+        master = master.merge(cancer_waiting_metrics, on=["org_code", "month"], how="left")
+        print(f"  After cancer waiting join: {master.shape}")
 
     master = master.merge(cqc_metrics,       on="org_code", how="left")
     master = master.merge(oversight_metrics,  on="org_code", how="left")
