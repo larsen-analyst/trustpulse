@@ -35,6 +35,7 @@ DIAGNOSTICS_PATH     = DATA_DIR / "diagnostics_clean.csv"
 REFERENCE_COSTS_PATH = DATA_DIR / "reference_costs_clean.csv"
 FFT_PATH             = DATA_DIR / "fft_clean.csv"
 COMPLAINTS_PATH      = DATA_DIR / "complaints_clean.csv"
+ESTATES_PATH         = DATA_DIR / "estates_clean.csv"
 
 MASTER_OUT   = DATA_DIR / "trust_master.csv"
 PROFILES_OUT = DATA_DIR / "trust_profiles.csv"
@@ -638,6 +639,29 @@ def build_complaints_metrics():
     return df
 
 
+def build_estates_metrics():
+    """
+    Load estates_clean.csv -- annual ERIC estates data per trust.
+    Snapshot join using latest available year per trust.
+    Key signals: high risk backlog, total backlog, maintenance cost.
+    """
+    if not ESTATES_PATH.exists():
+        print("  [WARNING] estates_clean.csv not found -- skipping")
+        return pd.DataFrame()
+    df = pd.read_csv(ESTATES_PATH, parse_dates=["period_date"])
+    df = df.sort_values("period_date", ascending=False)
+    df = df.drop_duplicates(subset=["org_code"], keep="first")
+    keep = ["org_code",
+            "estates_backlog_high_risk_m", "estates_backlog_significant_m",
+            "estates_backlog_moderate_m", "estates_backlog_total_m",
+            "estates_maintenance_cost_m", "estates_total_sites",
+            "estates_capital_lifecycle_m", "estates_fires_count"]
+    keep = [c for c in keep if c in df.columns]
+    df = df[keep].copy()
+    print(f"  Estates (ERIC)  : {len(df)} trusts | latest year snapshot")
+    return df
+
+
 def run():
     print("[join] Starting master join...")
 
@@ -667,6 +691,7 @@ def run():
     reference_costs_metrics = build_reference_costs_metrics()
     fft_metrics             = build_fft_metrics()
     complaints_metrics      = build_complaints_metrics()
+    estates_metrics         = build_estates_metrics()
 
     # ---------------------------------------------------------------------------
     # Join time series datasets onto spine (left join -- keeps all spine rows)
@@ -762,6 +787,10 @@ def run():
     if not complaints_metrics.empty:
         master = master.merge(complaints_metrics, on="org_code", how="left")
         print(f"  After complaints join: {master.shape}")
+
+    if not estates_metrics.empty:
+        master = master.merge(estates_metrics, on="org_code", how="left")
+        print(f"  After estates join: {master.shape}")
 
     master = master.merge(cqc_metrics,       on="org_code", how="left")
     master = master.merge(oversight_metrics,  on="org_code", how="left")
