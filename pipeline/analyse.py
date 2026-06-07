@@ -460,6 +460,11 @@ def apply_rags(df):
         return "Amber"
     df["rag_shmi"] = safe_col(df, "shmi_banding_label").apply(shmi_rag)
 
+    # FFT inpatient positive recommendation rate
+    # Red < 85%, Amber < 92%. National average approximately 95-96%.
+    df["rag_fft"] = safe_col(df, "fft_pct_positive_3m_avg").apply(
+        lambda v: rag_threshold(v, "low", 0.85, 0.92))
+
     return df
 
 
@@ -524,14 +529,16 @@ def domain_scores(df):
     d5_cdiff  = df["rag_cdiff"].apply(rs)
     d5_dna    = df["rag_dna_rate"].apply(rs)
     d5_shmi   = df["rag_shmi"].apply(rs)
+    d5_fft    = df["rag_fft"].apply(rs_neutral)
     df["d5_score"] = (
         d5_shmi  * 0.20 +
-        d5_cqc   * 0.20 +
+        d5_cqc   * 0.18 +
         d5_beds  * 0.15 +
-        d5_dtoc  * 0.15 +
-        d5_canc  * 0.15 +
+        d5_dtoc  * 0.12 +
+        d5_canc  * 0.12 +
         d5_cdiff * 0.08 +
-        d5_dna   * 0.07
+        d5_dna   * 0.07 +
+        d5_fft   * 0.08
     ).clip(0, 100).round(1)
 
     # Domain RAG

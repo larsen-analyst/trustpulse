@@ -33,6 +33,7 @@ SHMI_PATH            = DATA_DIR / "shmi_clean.csv"
 CANCER_WAITING_PATH  = DATA_DIR / "cancer_waiting_clean.csv"
 DIAGNOSTICS_PATH     = DATA_DIR / "diagnostics_clean.csv"
 REFERENCE_COSTS_PATH = DATA_DIR / "reference_costs_clean.csv"
+FFT_PATH             = DATA_DIR / "fft_clean.csv"
 
 MASTER_OUT   = DATA_DIR / "trust_master.csv"
 PROFILES_OUT = DATA_DIR / "trust_profiles.csv"
@@ -592,6 +593,26 @@ def build_reference_costs_metrics():
     return df
 
 
+def build_fft_metrics():
+    """
+    Load fft_clean.csv -- monthly FFT inpatient recommendation rates per trust.
+    Monthly time series join on org_code and month.
+    NHS target: > 95% positive recommendation rate.
+    """
+    if not FFT_PATH.exists():
+        print("  [WARNING] fft_clean.csv not found -- skipping")
+        return pd.DataFrame()
+    df = pd.read_csv(FFT_PATH, parse_dates=["period_date"])
+    df["month"] = df["period_date"].dt.to_period("M").dt.to_timestamp()
+    keep = ["org_code", "month", "fft_total_responses",
+            "fft_pct_positive", "fft_pct_negative"]
+    keep = [c for c in keep if c in df.columns]
+    df = df[[c for c in keep]].copy()
+    df = df.drop_duplicates(subset=["org_code", "month"], keep="first")
+    print(f"  FFT inpatient   : {len(df):,} rows | {df['org_code'].nunique()} trusts")
+    return df
+
+
 def run():
     print("[join] Starting master join...")
 
@@ -619,6 +640,7 @@ def run():
     cancer_waiting_metrics = build_cancer_waiting_metrics()
     diagnostics_metrics    = build_diagnostics_metrics()
     reference_costs_metrics = build_reference_costs_metrics()
+    fft_metrics             = build_fft_metrics()
 
     # ---------------------------------------------------------------------------
     # Join time series datasets onto spine (left join -- keeps all spine rows)
@@ -705,6 +727,11 @@ def run():
     if not reference_costs_metrics.empty:
         master = master.merge(reference_costs_metrics, on="org_code", how="left")
         print(f"  After reference costs join: {master.shape}")
+
+    if not fft_metrics.empty:
+        fft_metrics["month"] = pd.to_datetime(fft_metrics["month"])
+        master = master.merge(fft_metrics, on=["org_code", "month"], how="left")
+        print(f"  After FFT join: {master.shape}")
 
     master = master.merge(cqc_metrics,       on="org_code", how="left")
     master = master.merge(oversight_metrics,  on="org_code", how="left")
