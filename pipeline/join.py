@@ -34,6 +34,7 @@ CANCER_WAITING_PATH  = DATA_DIR / "cancer_waiting_clean.csv"
 DIAGNOSTICS_PATH     = DATA_DIR / "diagnostics_clean.csv"
 REFERENCE_COSTS_PATH = DATA_DIR / "reference_costs_clean.csv"
 FFT_PATH             = DATA_DIR / "fft_clean.csv"
+COMPLAINTS_PATH      = DATA_DIR / "complaints_clean.csv"
 
 MASTER_OUT   = DATA_DIR / "trust_master.csv"
 PROFILES_OUT = DATA_DIR / "trust_profiles.csv"
@@ -613,6 +614,30 @@ def build_fft_metrics():
     return df
 
 
+def build_complaints_metrics():
+    """
+    Load complaints_clean.csv -- annual NHS written complaints per trust.
+    Snapshot join using the latest available year per trust.
+    Key signals: total complaints, % waiting times, % communications, % upheld.
+    """
+    if not COMPLAINTS_PATH.exists():
+        print("  [WARNING] complaints_clean.csv not found -- skipping")
+        return pd.DataFrame()
+    df = pd.read_csv(COMPLAINTS_PATH, parse_dates=["period_date"])
+    # Use latest year per trust
+    df = df.sort_values("period_date", ascending=False)
+    df = df.drop_duplicates(subset=["org_code"], keep="first")
+    keep = ["org_code", "comp_total_new", "comp_pct_upheld",
+            "comp_pct_comm", "comp_pct_waiting", "comp_pct_clinical",
+            "comp_pct_discharge", "comp_pct_care",
+            "comp_service_inpatient", "comp_service_outpatient",
+            "comp_service_emergency"]
+    keep = [c for c in keep if c in df.columns]
+    df = df[keep].copy()
+    print(f"  Complaints      : {len(df)} trusts | latest year snapshot")
+    return df
+
+
 def run():
     print("[join] Starting master join...")
 
@@ -641,6 +666,7 @@ def run():
     diagnostics_metrics    = build_diagnostics_metrics()
     reference_costs_metrics = build_reference_costs_metrics()
     fft_metrics             = build_fft_metrics()
+    complaints_metrics      = build_complaints_metrics()
 
     # ---------------------------------------------------------------------------
     # Join time series datasets onto spine (left join -- keeps all spine rows)
@@ -732,6 +758,10 @@ def run():
         fft_metrics["month"] = pd.to_datetime(fft_metrics["month"])
         master = master.merge(fft_metrics, on=["org_code", "month"], how="left")
         print(f"  After FFT join: {master.shape}")
+
+    if not complaints_metrics.empty:
+        master = master.merge(complaints_metrics, on="org_code", how="left")
+        print(f"  After complaints join: {master.shape}")
 
     master = master.merge(cqc_metrics,       on="org_code", how="left")
     master = master.merge(oversight_metrics,  on="org_code", how="left")

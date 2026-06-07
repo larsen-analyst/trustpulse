@@ -465,6 +465,17 @@ def apply_rags(df):
     df["rag_fft"] = safe_col(df, "fft_pct_positive_3m_avg").apply(
         lambda v: rag_threshold(v, "low", 0.85, 0.92))
 
+    # Complaints -- % of complaints about waiting times
+    # High waiting times complaints directly corroborates RTT and cancer signals
+    # Red > 15% waiting, Amber > 10%
+    df["rag_complaints_waiting"] = safe_col(df, "comp_pct_waiting").apply(
+        lambda v: rag_threshold(v, "high", 0.15, 0.10))
+
+    # Complaints upheld rate -- high upheld rate means trust is often wrong
+    # Red > 50% upheld, Amber > 35%
+    df["rag_complaints_upheld"] = safe_col(df, "comp_pct_upheld").apply(
+        lambda v: rag_threshold(v, "high", 0.50, 0.35))
+
     return df
 
 
@@ -530,15 +541,19 @@ def domain_scores(df):
     d5_dna    = df["rag_dna_rate"].apply(rs)
     d5_shmi   = df["rag_shmi"].apply(rs)
     d5_fft    = df["rag_fft"].apply(rs_neutral)
+    d5_comp_w = df["rag_complaints_waiting"].apply(rs_neutral)
+    d5_comp_u = df["rag_complaints_upheld"].apply(rs_neutral)
     df["d5_score"] = (
-        d5_shmi  * 0.20 +
-        d5_cqc   * 0.18 +
-        d5_beds  * 0.15 +
-        d5_dtoc  * 0.12 +
-        d5_canc  * 0.12 +
-        d5_cdiff * 0.08 +
-        d5_dna   * 0.07 +
-        d5_fft   * 0.08
+        d5_shmi   * 0.18 +
+        d5_cqc    * 0.17 +
+        d5_beds   * 0.14 +
+        d5_dtoc   * 0.11 +
+        d5_canc   * 0.11 +
+        d5_cdiff  * 0.07 +
+        d5_dna    * 0.07 +
+        d5_fft    * 0.08 +
+        d5_comp_w * 0.04 +
+        d5_comp_u * 0.03
     ).clip(0, 100).round(1)
 
     # Domain RAG
