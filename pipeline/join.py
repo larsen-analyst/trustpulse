@@ -32,6 +32,7 @@ SICKNESS_DETAIL_PATH = DATA_DIR / "sickness_detail_clean.csv"
 SHMI_PATH            = DATA_DIR / "shmi_clean.csv"
 CANCER_WAITING_PATH  = DATA_DIR / "cancer_waiting_clean.csv"
 DIAGNOSTICS_PATH     = DATA_DIR / "diagnostics_clean.csv"
+REFERENCE_COSTS_PATH = DATA_DIR / "reference_costs_clean.csv"
 
 MASTER_OUT   = DATA_DIR / "trust_master.csv"
 PROFILES_OUT = DATA_DIR / "trust_profiles.csv"
@@ -569,6 +570,28 @@ def build_diagnostics_metrics():
     return df
 
 
+def build_reference_costs_metrics():
+    """
+    Load reference_costs_clean.csv -- NHS National Cost Collection 2024/25.
+    Snapshot join on org_code. MFF-adjusted unit costs vs national expected.
+    Positive gap_pct = trust spends more than expected. Key false economy signal.
+    """
+    if not REFERENCE_COSTS_PATH.exists():
+        print("  [WARNING] reference_costs_clean.csv not found -- skipping")
+        return pd.DataFrame()
+    df = pd.read_csv(REFERENCE_COSTS_PATH, dtype={"org_code": str})
+    keep = ["org_code", "rc_actual_cost_total_m", "rc_expected_cost_total_m",
+            "rc_cost_gap_m", "rc_cost_gap_pct",
+            "rc_apc_actual_m", "rc_apc_gap_pct",
+            "rc_op_actual_m", "rc_op_gap_pct",
+            "rc_ae_actual_m", "rc_ae_gap_pct"]
+    keep = [c for c in keep if c in df.columns]
+    df = df[keep].copy()
+    df = df.drop_duplicates(subset=["org_code"])
+    print(f"  Reference costs : {len(df)} providers | 2024-25 snapshot")
+    return df
+
+
 def run():
     print("[join] Starting master join...")
 
@@ -595,6 +618,7 @@ def run():
     shmi_metrics        = build_shmi_metrics()
     cancer_waiting_metrics = build_cancer_waiting_metrics()
     diagnostics_metrics    = build_diagnostics_metrics()
+    reference_costs_metrics = build_reference_costs_metrics()
 
     # ---------------------------------------------------------------------------
     # Join time series datasets onto spine (left join -- keeps all spine rows)
@@ -677,6 +701,10 @@ def run():
         diagnostics_metrics["month"] = pd.to_datetime(diagnostics_metrics["month"])
         master = master.merge(diagnostics_metrics, on=["org_code", "month"], how="left")
         print(f"  After diagnostics join: {master.shape}")
+
+    if not reference_costs_metrics.empty:
+        master = master.merge(reference_costs_metrics, on="org_code", how="left")
+        print(f"  After reference costs join: {master.shape}")
 
     master = master.merge(cqc_metrics,       on="org_code", how="left")
     master = master.merge(oversight_metrics,  on="org_code", how="left")

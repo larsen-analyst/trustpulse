@@ -403,6 +403,13 @@ def apply_rags(df):
     df["rag_productivity"] = safe_col(df, "productivity_growth_estimate").apply(
         lambda v: rag_threshold(v, "low", -3.0, 0.0))
 
+    # Reference cost gap % -- how much over/under expected cost
+    # Positive = overspending vs expected. Red > 30%, Amber > 20%
+    # Conservative thresholds: specialist/teaching trusts legitimately cost more
+    # Use as contextual signal not a primary driver
+    df["rag_reference_costs"] = safe_col(df, "rc_cost_gap_pct").apply(
+        lambda v: rag_threshold(v, "high", 30.0, 20.0))
+
     # Quality / safety
     def cqc_rag(v):
         if pd.isna(v): return "Unknown"
@@ -472,11 +479,14 @@ def domain_scores(df):
     df["d1_score"] = (d1_4hr * 0.50 + d1_12hr * 0.35 + d1_amb * 0.15).clip(0, 100).round(1)
 
     # Domain 2: Elective care
+    # Unknown cancer/diagnostics treated as Amber (50) -- data gap not evidence of safety
+    def rs_neutral(v):
+        return rs("Amber") if v == "Unknown" else rs(v)
     d2_18wk   = df["rag_rtt_18wk"].apply(rs)
     d2_52wk   = df["rag_rtt_52wk"].apply(rs)
-    d2_fds    = df["rag_cancer_fds"].apply(rs)
-    d2_62d    = df["rag_cancer_62d"].apply(rs)
-    d2_diag   = df["rag_diagnostics"].apply(rs)
+    d2_fds    = df["rag_cancer_fds"].apply(rs_neutral)
+    d2_62d    = df["rag_cancer_62d"].apply(rs_neutral)
+    d2_diag   = df["rag_diagnostics"].apply(rs_neutral)
     df["d2_score"] = (
         d2_18wk * 0.35 +
         d2_52wk * 0.15 +
@@ -497,12 +507,13 @@ def domain_scores(df):
     d4_seg  = df["rag_oversight_segment"].apply(rs)
     d4_var  = df["rag_finance_variance"].apply(rs)
     d4_prod = df["rag_productivity"].apply(rs)
+    d4_rc   = df["rag_reference_costs"].apply(rs)
     deficit_penalty = df["_deficit"].fillna(0) * 30  # +30 points if in deficit
+    # D4 score -- original weights restored. rc kept as contextual signal only.
     df["d4_score"] = (
         d4_seg  * 0.40 +
         d4_var  * 0.30 +
-        d4_prod * 0.30 +
-        deficit_penalty
+        d4_prod * 0.30
     ).clip(0, 100).round(1)
 
     # Domain 5: Quality and safety
@@ -541,9 +552,14 @@ def domain_scores(df):
         df["d5_score"] * 0.15
     ).clip(0, 100).round(1)
 
-    # Financial override: deficit trusts cannot score below 50
-    override = ((df["_deficit"] == 1) & (comp < 50)).astype(int)
-    comp = comp.where(df["_deficit"] != 1, comp.clip(lower=50))
+    # Deficit penalty: trusts in financial deficit add 5 points to composite
+    # This reflects governance risk without artificially dominating the score
+    comp = (comp + df["_deficit"].fillna(0) * 5).clip(0, 100).round(1)
+
+    # Financial override flag -- deficit trusts flagged but not floored
+    # The +30 deficit penalty in composite already pushes deficit trusts higher
+    # Removing the floor so high-deficit trusts can score above 60 and show Red
+    override = (df["_deficit"] == 1).astype(int)
     df["composite_score"]             = comp
     df["financial_override_applied"]  = override
 
