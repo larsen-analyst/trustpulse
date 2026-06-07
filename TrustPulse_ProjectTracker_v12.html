@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TrustPulse — Project Tracker v12</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f4f0; color: #1a1a18; font-size: 14px; min-height: 100vh; padding: 2rem; }
+  .container { max-width: 960px; margin: 0 auto; }
+  .header { margin-bottom: 2rem; }
+  .header h1 { font-size: 24px; font-weight: 600; color: #1a1a18; margin-bottom: 4px; }
+  .header p { font-size: 13px; color: #6b6b68; margin-bottom: 8px; }
+  .header-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .badge { font-size: 11px; font-weight: 500; padding: 3px 10px; border-radius: 20px; border: 1px solid; }
+  .badge-blue { background: #e6f1fb; color: #185fa5; border-color: #b5d4f4; }
+  .badge-gray { background: #f1efe8; color: #5f5e5a; border-color: #d3d1c7; }
+  .badge-green { background: #e1f5ee; color: #0f6e56; border-color: #9fe1cb; }
+  .badge-orange { background: #faeeda; color: #854f0b; border-color: #fac775; }
+  .badge-red { background: #fcebeb; color: #a32d2d; border-color: #f7c1c1; }
+  .badge-purple { background: #eeedfe; color: #534ab7; border-color: #c5c3fc; }
+  .summary-bar { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 1.5rem; }
+  .stat { background: #fff; border: 1px solid #e0ded6; border-radius: 10px; padding: 12px; text-align: center; }
+  .stat-num { font-size: 24px; font-weight: 600; color: #1a1a18; line-height: 1; }
+  .stat-label { font-size: 10px; color: #8a8a86; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .progress-bar-wrap { margin-bottom: 1.5rem; }
+  .progress-label { font-size: 12px; color: #6b6b68; margin-bottom: 6px; display: flex; justify-content: space-between; }
+  .progress-track { height: 6px; background: #e0ded6; border-radius: 10px; overflow: hidden; }
+  .progress-fill { height: 100%; background: #1d9e75; border-radius: 10px; transition: width 0.4s ease; }
+  .phase { background: #fff; border: 1px solid #e0ded6; border-radius: 12px; margin-bottom: 12px; overflow: hidden; }
+  .phase-header { display: flex; align-items: center; gap: 10px; padding: 12px 18px; cursor: pointer; border-bottom: 1px solid #e0ded6; user-select: none; }
+  .phase-header:hover { background: #fafaf8; }
+  .phase-num { font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 20px; flex-shrink: 0; }
+  .phase-title { font-weight: 500; font-size: 14px; color: #1a1a18; flex: 1; line-height: 1.3; }
+  .phase-count { font-size: 11px; color: #8a8a86; white-space: nowrap; }
+  .phase-chevron { font-size: 11px; color: #8a8a86; transition: transform 0.2s; }
+  .phase-chevron.open { transform: rotate(180deg); }
+  .task-list { display: none; }
+  .task-list.open { display: block; }
+  .task { display: flex; align-items: flex-start; gap: 10px; padding: 9px 18px; border-bottom: 1px solid #f0ede6; }
+  .task:last-child { border-bottom: none; }
+  .task.status-done .task-name { text-decoration: line-through; color: #b4b2a9; }
+  .task-status { flex-shrink: 0; padding-top: 1px; }
+  .status-select { font-size: 11px; font-weight: 500; padding: 2px 7px; border-radius: 20px; border: 1px solid; cursor: pointer; appearance: none; -webkit-appearance: none; outline: none; min-width: 84px; text-align: center; }
+  .task-body { flex: 1; min-width: 0; }
+  .task-name { font-size: 13px; font-weight: 500; color: #1a1a18; margin-bottom: 2px; line-height: 1.4; }
+  .task-detail { font-size: 11px; color: #6b6b68; line-height: 1.5; margin-bottom: 3px; }
+  .task-meta { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+  .file-tag { font-size: 10px; padding: 2px 7px; background: #f5f4f0; border: 1px solid #e0ded6; border-radius: 6px; color: #5f5e5a; font-family: monospace; }
+  .cost-tag { font-size: 10px; padding: 2px 7px; background: #e1f5ee; border: 1px solid #9fe1cb; border-radius: 6px; color: #0f6e56; }
+  .source-tag { font-size: 10px; padding: 2px 7px; background: #e6f1fb; border: 1px solid #b5d4f4; border-radius: 6px; color: #185fa5; }
+  .deadline-tag { font-size: 10px; padding: 2px 7px; background: #faeeda; border: 1px solid #fac775; border-radius: 6px; color: #854f0b; }
+  .section-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: #8a8a86; padding: 6px 18px 3px; background: #fafaf8; border-bottom: 1px solid #f0ede6; border-top: 1px solid #f0ede6; }
+  .version-note { font-size: 12px; background: #e6f1fb; color: #185fa5; border-radius: 8px; padding: 10px 14px; margin-bottom: 1.5rem; border: 1px solid #b5d4f4; line-height: 1.6; }
+  .next-priority { font-size: 12px; background: #faeeda; color: #854f0b; border-radius: 8px; padding: 10px 14px; margin-bottom: 1.5rem; border: 1px solid #fac775; line-height: 1.6; }
+  .last-updated { text-align: center; font-size: 11px; color: #b4b2a9; margin-top: 2rem; padding-bottom: 1rem; }
+  .reset-btn { display: block; margin: 1rem auto 0; font-size: 11px; color: #b4b2a9; background: none; border: 1px solid #e0ded6; border-radius: 20px; padding: 4px 14px; cursor: pointer; }
+  .reset-btn:hover { color: #a32d2d; border-color: #f7c1c1; background: #fcebeb; }
+  .p1{background:#e6f1fb;color:#185fa5} .p2{background:#e1f5ee;color:#0f6e56} .p3{background:#faeeda;color:#854f0b} .p4{background:#eeedfe;color:#534ab7} .p5{background:#faece7;color:#993c1d} .p6{background:#fce8f3;color:#8b1a6b} .p7{background:#e8f4e8;color:#2d6e2d} .p8{background:#fff3e0;color:#e65100} .p9{background:#e3f2fd;color:#0d47a1} .p10{background:#fce4ec;color:#880e4f} .p11{background:#f3e5f5;color:#4a148c} .p12{background:#e0f2f1;color:#004d40} .p13{background:#fff8e1;color:#f57f17} .p14{background:#fbe9e7;color:#bf360c} .p15{background:#e8eaf6;color:#1a237e} .p16{background:#f9fbe7;color:#558b2f} .p17{background:#fce4ec;color:#c62828} .p18{background:#e8f5e9;color:#1b5e20} .p19{background:#fff3e0;color:#bf360c} .p20{background:#e3f2fd;color:#0d47a1} .p21{background:#fce4ec;color:#c62828} .p22{background:#e8f5e9;color:#1b5e20} .p23{background:#f3e5f5;color:#4a148c} .p24{background:#e0f2f1;color:#004d40} .p25{background:#e8f5e9;color:#1b5e20} .p26{background:#fff3e0;color:#e65100} .p27{background:#e3f2fd;color:#0d47a1} .p28{background:#fce4ec;color:#880e4f} .p29{background:#f3e5f5;color:#4a148c} .p30{background:#e0f2f1;color:#004d40} .p31{background:#fff8e1;color:#f57f17} .p32{background:#fbe9e7;color:#bf360c} .p33{background:#e8eaf6;color:#1a237e} .p34{background:#f9fbe7;color:#558b2f}
+  .s-todo{background:#f5f4f0;color:#5f5e5a;border-color:#d3d1c7} .s-in-progress{background:#faeeda;color:#854f0b;border-color:#fac775} .s-done{background:#e1f5ee;color:#0f6e56;border-color:#9fe1cb} .s-blocked{background:#fcebeb;color:#a32d2d;border-color:#f7c1c1}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>TrustPulse — project tracker v12</h1>
+    <p>NHS performance and operational efficiency analytics platform — complete product and commercial roadmap</p>
+    <div class="header-meta">
+      <span class="badge badge-blue">Larsen Peter Anandh</span>
+      <span class="badge badge-gray">Python / Flask / Power BI / SQLite</span>
+      <span class="badge badge-green">22 datasets in pipeline</span>
+      <span class="badge badge-orange">False economy detector</span>
+      <span class="badge badge-red">Correlation and projection engine</span>
+      <span class="badge badge-purple">Innovator Founder Visa route</span>
+      <span class="badge badge-gray">github.com/larsen-analyst/trustpulse</span>
+    </div>
+  </div>
+
+  <div class="version-note">
+    <strong>v12 update (7 June 2026):</strong> All v11 tasks preserved with status updates. Major session completions: sickness_detail.py done (287 orgs, MH flag), SHMI ingested (120 trusts, Apr 2022-Dec 2025, in D5 scoring), cancer waiting times ingested (200 trusts, Apr 2022-Jan 2026, FDS and 62D in D2), diagnostics ingested (167 trusts, Apr 2024-Mar 2026, 6-week wait in D2), reference costs ingested (206 providers, £113.5bn NHS spend), FFT inpatient ingested (164 trusts, Apr 2022-Mar 2026, in D5), MH sickness flag wired into D3. Current scores: 21R/181A/19G, 560 cols, £6.85bn inefficiency, 42 deficit trusts flagged. New phases added: Phase 25 (remaining data downloads), Phase 26 (correlation engine), Phase 27 (projection engine), Phase 28 (never events), Phase 29 (specialty RTT), Phase 30 (LOS from reference costs), Phase 31 (false economy detector complete), Phase 32 (app completeness audit), Phase 33 (authentication), Phase 34 (deployment). 12-priority build order set by product owner.
+  </div>
+
+  <div class="next-priority">
+    <strong>Build order (product owner priorities):</strong> P1: Download all remaining datasets. P2: Clean and analyse every dataset. P3: Correlation matrix engine. P4: Projection engine. P5: Never events. P6: Agency cap breach. P7: Specialty RTT. P8: LOS from reference costs. P9: False economy detector. P10: App completeness audit. P11: Authentication. P12: Deployment.
+  </div>
+
+  <div class="summary-bar" id="summary"></div>
+  <div class="progress-bar-wrap">
+    <div class="progress-label"><span>Overall progress</span><span id="pct-label">0%</span></div>
+    <div class="progress-track"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+  </div>
+  <div id="phases"></div>
+  <div class="last-updated" id="last-updated"></div>
+  <button class="reset-btn" onclick="resetAll()">Reset all statuses</button>
+</div>
+
+<script>
+const STORAGE_KEY = "trustpulse_tracker_v12";
+
+const phases = [
+  {
+    id:1, title:"Data collection -- Domain 1: A&E and urgent care", numClass:"p1",
+    tasks:[
+      {id:"1a",name:"A&E monthly CSV files -- 48 files",detail:"April 2022 to March 2026.",files:["data/raw/ae/"],status:"done"},
+      {id:"1b",name:"Sickness absence national format -- 21 files",detail:"April 2022 to December 2023.",files:["data/raw/sickness/national/"],status:"done"},
+      {id:"1c",name:"Sickness absence trust level -- 25 files",detail:"January 2024 to January 2026.",files:["data/raw/sickness/trust/"],status:"done"},
+      {id:"1d",name:"Verify folder structure and file counts",status:"done"}
+    ]
+  },
+  {
+    id:2, title:"Data collection -- Domain 2: Elective care (RTT)", numClass:"p2",
+    tasks:[
+      {id:"2a",name:"RTT 18-week waiting times monthly files",files:["data/raw/rtt/"],status:"done"},
+      {id:"2b",name:"RTT overview time series file",status:"done"},
+      {id:"2c",name:"Verify RTT structure",status:"done"}
+    ]
+  },
+  {
+    id:3, title:"Data collection -- Domain 3: Workforce", numClass:"p3",
+    tasks:[
+      {id:"3a",name:"NHS workforce FTE monthly files -- extended to March 2026",files:["data/raw/workforce/"],status:"done"},
+      {id:"3b",name:"NHS staff turnover rates by trust",detail:"BLOCKED -- regional only, no trust-level public data.",status:"blocked"},
+      {id:"3c",name:"Bank and agency staff usage by trust",detail:"BLOCKED -- behind NHS FutureNHS login wall.",status:"blocked"},
+      {id:"3d",name:"NHS vacancy benchmark rates -- regional",files:["data/raw/vacancies/"],status:"done"},
+      {id:"3e",name:"NHS Staff Survey 2021-2025",files:["data/raw/staff_survey/"],status:"done"},
+      {id:"3f",name:"Verify workforce file structures",status:"done"}
+    ]
+  },
+  {
+    id:4, title:"Data collection -- Domain 4: Finance and productivity", numClass:"p4",
+    tasks:[
+      {id:"4a",name:"NHS trust financial positions Q3 2025/26 -- OCR from PDF",files:["data/raw/finance/"],status:"done"},
+      {id:"4b",name:"NHS Oversight Framework segment scores -- Q3 2025/26",files:["data/raw/oversight/"],status:"done"},
+      {id:"4c",name:"Ambulance handover delays -- Nov 2025-Mar 2026",files:["data/raw/ambulance/"],status:"done"},
+      {id:"4d",name:"NHS productivity growth estimates by trust",status:"done"},
+      {id:"4e",name:"Update finance data when Q4 2025/26 published",detail:"Expected July 2026.",deadlineTag:"July 2026",status:"todo"},
+      {id:"4f",name:"NHS National Cost Collection 2024/25 -- reference costs",detail:"206 providers, £113.5bn NHS spend. MFF adjusted and unadjusted. DONE.",files:["data/raw/reference_costs/"],status:"done"},
+      {id:"4g",name:"NHS Oversight Framework League Tables 2025/26",detail:"Validation dataset for TrustPulse scoring. Source: england.nhs.uk/nhs-oversight-framework.",files:["data/raw/oversight/league_tables/"],status:"todo"}
+    ]
+  },
+  {
+    id:5, title:"Data collection -- Domain 5: Quality, safety and efficiency", numClass:"p5",
+    tasks:[
+      {id:"5a",name:"CQC inspection ratings by trust",files:["data/raw/cqc/"],status:"done"},
+      {id:"5b",name:"Cancelled elective operations by trust",files:["data/raw/cancelled_ops/"],status:"done"},
+      {id:"5c",name:"Bed availability and occupancy -- daily sitrep, 48 files",files:["data/raw/beds/sitrep/"],status:"done"},
+      {id:"5d",name:"Delayed transfers of care by trust",files:["data/raw/discharge_delays/"],status:"done"},
+      {id:"5e",name:"Hospital outpatient activity including DNA rates",files:["data/raw/outpatients/"],status:"done"},
+      {id:"5f",name:"KH03 quarterly bed occupancy collection",files:["data/raw/beds/kh03/"],status:"done"},
+      {id:"5g",name:"Verify all Domain 5 file structures",status:"done"},
+      {id:"5h",name:"SHMI -- Summary Hospital-level Mortality Indicator",detail:"120 trusts, Apr 2022-Dec 2025. 37 zip files. In D5 scoring at 20% weight. DONE.",files:["data/raw/shmi/"],status:"done"},
+      {id:"5i",name:"Cancer waiting times -- monthly trust-level",detail:"200 trusts, Apr 2022-Jan 2026. FDS and 62-day in D2 scoring. DONE.",files:["data/raw/cancer_waiting/"],status:"done"},
+      {id:"5j",name:"Diagnostic waiting times -- monthly trust-level",detail:"167 trusts, Apr 2024-Mar 2026. 6-week wait in D2 scoring. DONE.",files:["data/raw/diagnostics/"],status:"done"},
+      {id:"5k",name:"Maternity and neonatal safety -- MBRRACE-UK",detail:"Annual perinatal mortality rates. Stillbirth and neonatal death rates per 1,000 births. Source: mbrrace-uk.org",files:["data/raw/maternity/"],status:"todo"},
+      {id:"5l",name:"FFT inpatient -- monthly trust-level",detail:"164 trusts, Apr 2022-Mar 2026. 48 xlsm files. In D5 scoring at 8% weight. DONE.",files:["data/raw/fft/"],status:"done"},
+      {id:"5m",name:"NHS Complaints data -- annual trust-level 2024-25",detail:"113,780 HCHS complaints. Communications (17.6%) and clinical treatment top categories. Source: digital.nhs.uk/data-and-information/publications/statistical/data-on-written-complaints-in-the-nhs/2024-25",files:["data/raw/complaints/"],status:"todo"},
+      {id:"5n",name:"NHS Complaints data -- prior years 2022-23 and 2023-24",detail:"For trend analysis. Same source, archived publications.",files:["data/raw/complaints/"],status:"todo"}
+    ]
+  },
+  {
+    id:6, title:"Data collection -- Prevention, safety and infrastructure", numClass:"p6",
+    tasks:[
+      {id:"6a",name:"Sport England Active Lives data by local authority",detail:"21 county LAs. 2024-25. DONE.",files:["data/raw/prevention/sport_england/"],status:"done"},
+      {id:"6b",name:"PHE Fingertips preventable admissions data",detail:"BLOCKED -- API returning 500 errors.",files:["data/raw/prevention/phe/"],status:"blocked"},
+      {id:"6c",name:"ERIC estates data 2024-25 -- backlog maintenance by trust",detail:"Annual NHS Digital publication. Estimated cost to eradicate backlog maintenance per trust. Total estate running costs, energy, cleaning. £15.9bn total backlog nationally. Source: digital.nhs.uk/data-and-information/publications/statistical/estates-returns-information-collection/summary-page-and-dataset-for-eric-2024-25",files:["data/raw/estates/"],status:"todo"},
+      {id:"6d",name:"ERIC estates data -- prior years 2022-23 and 2023-24",detail:"For trend. Same source, archived publications.",files:["data/raw/estates/"],status:"todo"},
+      {id:"6e",name:"Never Events annual report 2024-25",detail:"421 incidents across trusts Apr 2024-Mar 2025. Source: england.nhs.uk/patient-safety/never-events-data/",files:["data/raw/never_events/"],status:"todo"},
+      {id:"6f",name:"Never Events provisional 2025-26",detail:"305 incidents Apr 2025-Dec 2025. Provisional, subject to change. Same source.",files:["data/raw/never_events/"],status:"todo"},
+      {id:"6g",name:"Never Events prior years 2022-23 and 2023-24",detail:"For trend analysis. Same source.",files:["data/raw/never_events/"],status:"todo"},
+      {id:"6h",name:"Digital Maturity Assessment 2025",detail:"205 trusts. EPR integration, data flow maturity, digital infrastructure. Source: NHS England DMA publication.",files:["data/raw/digital_maturity/"],status:"todo"},
+      {id:"6i",name:"NHS Oversight League Tables 2025-26",detail:"AMR and IMR rankings per trust. Validation dataset. Source: england.nhs.uk/nhs-oversight-framework/segmentation-and-league-tables/",files:["data/raw/oversight/league_tables/"],status:"todo"},
+      {id:"6j",name:"Data Security and Protection Toolkit scores",detail:"Annual trust-level cyber maturity scores. Source: dsptoolkit.nhs.uk",files:["data/raw/dspt/"],status:"todo"},
+      {id:"6k",name:"NHS Premises Assurance Model (PAM) 2025-26",detail:"Estate safety scores per trust. Annual. Source: england.nhs.uk/long-read/the-nhs-premises-assurance-model-26-27/",files:["data/raw/pam/"],status:"todo"}
+    ]
+  },
+  {
+    id:7, title:"Automated cleaning pipeline -- all datasets", numClass:"p7",
+    sections:[
+      {
+        label:"Pipeline architecture",
+        tasks:[
+          {id:"7a1",name:"pipeline/ingest/ folder",detail:"22 ingest scripts operational. All committed.",files:["pipeline/ingest/"],status:"done"},
+          {id:"7a2",name:"run_pipeline.py -- master runner",files:["pipeline/run_pipeline.py"],status:"done"},
+          {id:"7a3",name:"download.py -- auto NHS data downloader",detail:"BLOCKED -- NHS England URL patterns change frequently.",status:"blocked"},
+          {id:"7a4",name:"validate.py -- data quality checker",files:["pipeline/validate.py"],status:"done"}
+        ]
+      },
+      {
+        label:"Existing ingest scripts -- all done",
+        tasks:[
+          {id:"7b1",name:"ae.py",files:["pipeline/ingest/ae.py"],status:"done"},
+          {id:"7b2",name:"sickness.py",files:["pipeline/ingest/sickness.py"],status:"done"},
+          {id:"7b3",name:"sickness_detail.py -- staff group and reason breakdown",detail:"287 orgs, Jan 2024-Jan 2026. MH flag above 30% threshold. DONE.",files:["pipeline/ingest/sickness_detail.py"],status:"done"},
+          {id:"7b4",name:"rtt.py",files:["pipeline/ingest/rtt.py"],status:"done"},
+          {id:"7b5",name:"workforce.py",files:["pipeline/ingest/workforce.py"],status:"done"},
+          {id:"7b6",name:"beds.py",files:["pipeline/ingest/beds.py"],status:"done"},
+          {id:"7b7",name:"discharge.py",files:["pipeline/ingest/discharge.py"],status:"done"},
+          {id:"7b8",name:"cancelled_ops.py",files:["pipeline/ingest/cancelled_ops.py"],status:"done"},
+          {id:"7b9",name:"finance.py",files:["pipeline/ingest/finance.py"],status:"done"},
+          {id:"7b10",name:"cqc.py",files:["pipeline/ingest/cqc.py"],status:"done"},
+          {id:"7b11",name:"oversight.py",files:["pipeline/ingest/oversight.py"],status:"done"},
+          {id:"7b12",name:"staff_survey.py",files:["pipeline/ingest/staff_survey.py"],status:"done"},
+          {id:"7b13",name:"vacancies.py",files:["pipeline/ingest/vacancies.py"],status:"done"},
+          {id:"7b14",name:"ambulance.py",files:["pipeline/ingest/ambulance.py"],status:"done"},
+          {id:"7b15",name:"outpatients.py",files:["pipeline/ingest/outpatients.py"],status:"done"},
+          {id:"7b16",name:"sport_england.py",files:["pipeline/ingest/sport_england.py"],status:"done"},
+          {id:"7b17",name:"fingertips.py",detail:"BLOCKED -- API returning 500.",files:["pipeline/ingest/fingertips.py"],status:"blocked"},
+          {id:"7b18",name:"shmi.py",detail:"120 trusts, Apr 2022-Dec 2025. DONE.",files:["pipeline/ingest/shmi.py"],status:"done"},
+          {id:"7b19",name:"cancer_waiting.py",detail:"200 trusts, Apr 2022-Jan 2026. DONE.",files:["pipeline/ingest/cancer_waiting.py"],status:"done"},
+          {id:"7b20",name:"diagnostics.py",detail:"167 trusts, Apr 2024-Mar 2026. DONE.",files:["pipeline/ingest/diagnostics.py"],status:"done"},
+          {id:"7b21",name:"reference_costs.py",detail:"206 providers, £113.5bn. DONE.",files:["pipeline/ingest/reference_costs.py"],status:"done"},
+          {id:"7b22",name:"fft.py",detail:"164 trusts, Apr 2022-Mar 2026. DONE.",files:["pipeline/ingest/fft.py"],status:"done"}
+        ]
+      },
+      {
+        label:"New ingest scripts -- to build",
+        tasks:[
+          {id:"7c1",name:"complaints.py -- NHS written complaints ingest",detail:"Annual trust-level. KO41a collection. Complaints per 1,000 admissions by subject category. Source: digital.nhs.uk",files:["pipeline/ingest/complaints.py"],status:"todo"},
+          {id:"7c2",name:"estates.py -- ERIC backlog maintenance ingest",detail:"Annual trust-level. Backlog maintenance cost, estate running cost, high-risk backlog. Source: digital.nhs.uk ERIC.",files:["pipeline/ingest/estates.py"],status:"todo"},
+          {id:"7c3",name:"never_events.py -- never events ingest",detail:"Annual trust-level count of never events by type. Wrong site surgery, retained foreign objects, medication errors. Source: england.nhs.uk/patient-safety",files:["pipeline/ingest/never_events.py"],status:"todo"},
+          {id:"7c4",name:"rtt_specialty.py -- specialty RTT breakdown ingest",detail:"WLMDS weekly data. Waiting list by specialty and provider. Orthopaedics, ophthalmology, cardiology etc. Source: england.nhs.uk/statistics/statistical-work-areas/rtt-waiting-times/wlmds/",files:["pipeline/ingest/rtt_specialty.py"],status:"todo"},
+          {id:"7c5",name:"digital_maturity.py -- DMA 2025 ingest",detail:"205 trusts. EPR integration score, data flow maturity. Source: NHS England DMA.",files:["pipeline/ingest/digital_maturity.py"],status:"todo"},
+          {id:"7c6",name:"maternity.py -- MBRRACE-UK perinatal mortality ingest",detail:"Annual trust-level stillbirth and neonatal death rates. Source: mbrrace-uk.org",files:["pipeline/ingest/maternity.py"],status:"todo"},
+          {id:"7c7",name:"league_tables.py -- NHS Oversight league tables ingest",detail:"Trust AMR and IMR rankings. Validation dataset. Source: NHS England.",files:["pipeline/ingest/league_tables.py"],status:"todo"},
+          {id:"7c8",name:"dspt.py -- Data Security and Protection Toolkit ingest",detail:"Annual trust cyber maturity scores. Source: dsptoolkit.nhs.uk",files:["pipeline/ingest/dspt.py"],status:"todo"}
+        ]
+      },
+      {
+        label:"Master join and analysis engine",
+        tasks:[
+          {id:"7d1",name:"pipeline/join.py -- master trust dataset builder",detail:"9,624 rows, 221 trusts, 222 cols. 19 datasets joined. All new datasets integrated.",files:["pipeline/join.py"],status:"done"},
+          {id:"7d2",name:"pipeline/analyse.py -- full risk and efficiency scoring engine",detail:"5 domain scores, composite RAG, deficit penalty, narratives. 21R/181A/19G. 560 cols.",files:["pipeline/analyse.py"],status:"done"},
+          {id:"7d3",name:"Add complaints to join.py and D5 scoring",detail:"Snapshot join. Complaints rate above 75th percentile = Amber, 90th = Red.",status:"todo"},
+          {id:"7d4",name:"Add estates/ERIC to join.py as D4 contextual signal",detail:"Snapshot join. High-risk backlog as % of turnover. Correlate with reference costs.",status:"todo"},
+          {id:"7d5",name:"Add never events to join.py and D5 scoring",detail:"Annual count join. Rate per 10,000 admissions. Above 90th percentile = Red.",status:"todo"},
+          {id:"7d6",name:"Add specialty RTT to join.py as D2 enrichment",detail:"Weekly join by specialty. Identify which specialties are driving total backlog.",status:"todo"},
+          {id:"7d7",name:"Add digital maturity to join.py as D4 contextual signal",detail:"Snapshot join. Low DMA + high agency + poor productivity is a specific pattern.",status:"todo"},
+          {id:"7d8",name:"Update validate.py for all new datasets",detail:"Validation rules for complaints (positive integer), estates (positive float), never events (positive integer).",status:"todo"},
+          {id:"7d9",name:"Update run_pipeline.py to include all new ingest scripts",detail:"Add complaints, estates, never_events, rtt_specialty, digital_maturity, maternity to master runner.",status:"todo"},
+          {id:"7d10",name:"Test full pipeline end to end after all new data",detail:"Run run_pipeline.py from scratch. Verify row count stays at 9,624. Verify all new columns present.",status:"todo"}
+        ]
+      }
+    ]
+  },
+  {
+    id:8, title:"Numerical savings methodology -- cited sources only", numClass:"p8",
+    tasks:[
+      {id:"8a",name:"Document DNA cost calculation",detail:"GBP 120 per missed appointment. DONE.",costTag:"GBP 120/appointment",status:"done"},
+      {id:"8b",name:"Document delayed discharge cost calculation",detail:"GBP 345 per delayed bed day. DONE.",costTag:"GBP 345/bed day",status:"done"},
+      {id:"8c",name:"Document agency saving potential",detail:"BLOCKED until agency spend data available.",status:"blocked"},
+      {id:"8d",name:"Document cancelled operations cost",detail:"GBP 3,000 per cancelled op. DONE.",costTag:"GBP 3,000/op",status:"done"},
+      {id:"8e",name:"Document bed occupancy cost",detail:"Requires reference costs data. Escalation bed premium calculation.",status:"todo"},
+      {id:"8f",name:"Build methodology notes page in the app",files:["templates/methodology.html"],status:"todo"},
+      {id:"8g",name:"Flag internal-data-required items clearly",status:"todo"},
+      {id:"8h",name:"Document sickness cost calculation",detail:"GBP 200 per FTE day. DONE.",costTag:"GBP 200/FTE day",status:"done"},
+      {id:"8i",name:"Document reference cost unit efficiency gap",detail:"(Trust unit cost minus national average) x activity volume. DONE in analyse.py.",status:"done"},
+      {id:"8j",name:"Document never events cost",detail:"Each never event triggers investigation, litigation risk, and remediation. Estimate GBP 100,000 average liability per incident. Source: NHS Resolution published data.",costTag:"~GBP 100,000/incident",status:"todo"},
+      {id:"8k",name:"Document estates backlog cost",detail:"High-risk backlog as immediate liability. Catastrophic failure risk = potential ward/theatre closure cost.",status:"todo"}
+    ]
+  },
+  {
+    id:9, title:"Trust deep-dive profile -- all NHS oversight domains", numClass:"p9",
+    sections:[
+      {label:"Domain 1: Urgent and emergency care",tasks:[
+        {id:"9a1",name:"4hr performance with RAG, MOM, YOY and rolling averages",status:"in-progress"},
+        {id:"9a2",name:"12-hour breach count, rate and trend",status:"done"},
+        {id:"9a3",name:"Ambulance handover delay trend",status:"done"},
+        {id:"9a4",name:"Seasonal context and projected breach date",status:"todo"}
+      ]},
+      {label:"Domain 2: Elective care",tasks:[
+        {id:"9b1",name:"18-week RTT with RAG, trend and baseline",status:"in-progress"},
+        {id:"9b2",name:"52-week long waiter count and trend",status:"done"},
+        {id:"9b3",name:"RTT trend chart with 65% target line",status:"done"},
+        {id:"9b4",name:"28-day cancer FDS by trust -- live",status:"done"},
+        {id:"9b5",name:"62-day cancer treatment by trust -- live",status:"done"},
+        {id:"9b6",name:"Diagnostic six-week wait by trust -- live",status:"done"},
+        {id:"9b7",name:"Specialty RTT breakdown -- top 5 longest wait specialties per trust",detail:"Requires rtt_specialty.py. Shows which specialties are driving the backlog.",status:"todo"}
+      ]},
+      {label:"Domain 3: Workforce",tasks:[
+        {id:"9c1",name:"Sickness rate with trend and national benchmark",status:"done"},
+        {id:"9c2",name:"Sickness by staff group and top 3 reasons with MH flag",status:"done"},
+        {id:"9c3",name:"Vacancy and turnover rate trends",status:"todo"},
+        {id:"9c4",name:"Sickness vs A&E overlay and lag correlation",detail:"Requires correlation engine. Shows predictive lag.",status:"todo"}
+      ]},
+      {label:"Domain 4: Finance and productivity",tasks:[
+        {id:"9d1",name:"Surplus or deficit status with override flag",status:"done"},
+        {id:"9d2",name:"NHS Oversight segment with trajectory",status:"todo"},
+        {id:"9d3",name:"Productivity growth score vs regional and national peers",status:"done"},
+        {id:"9d4",name:"Unit cost efficiency gap vs national average",status:"done"},
+        {id:"9d5",name:"Estates backlog as % of turnover",detail:"Requires estates.py. High backlog + deficit = compound risk.",status:"todo"}
+      ]},
+      {label:"Domain 5: Quality and safety",tasks:[
+        {id:"9e1",name:"CQC overall and domain ratings -- live",status:"done"},
+        {id:"9e2",name:"Cancelled elective operations rate and trend",status:"done"},
+        {id:"9e3",name:"DNA rate with trend and cost estimate",status:"done"},
+        {id:"9e4",name:"SHMI banding and observed vs expected deaths -- live",status:"done"},
+        {id:"9e5",name:"FFT recommendation rate trend -- live",status:"done"},
+        {id:"9e6",name:"Complaints rate and top category",detail:"Requires complaints.py.",status:"todo"},
+        {id:"9e7",name:"Never events count and rate per 10,000 admissions",detail:"Requires never_events.py. Context: national average approximately 2 per trust per year.",status:"todo"},
+        {id:"9e8",name:"Maternity safety indicators",detail:"Requires maternity.py. Only for trusts with maternity services.",status:"todo"}
+      ]},
+      {label:"Composite and narrative",tasks:[
+        {id:"9f1",name:"Regional and national peer comparison -- live",status:"done"},
+        {id:"9f2",name:"Composite risk score -- live, 21R/181A/19G",status:"done"},
+        {id:"9f3",name:"Auto-generated plain English narrative -- live",status:"done"},
+        {id:"9f4",name:"Update narrative to include all new signals",detail:"Complaints, never events, estates backlog, specialty RTT. Run after all new data ingested.",status:"todo"}
+      ]}
+    ]
+  },
+  {
+    id:10, title:"Operational efficiency module", numClass:"p10",
+    sections:[
+      {label:"Bed and capacity efficiency",tasks:[
+        {id:"10a1",name:"Bed occupancy gauge chart vs 85% and 95% thresholds -- live",status:"in-progress"},
+        {id:"10a2",name:"Escalation beds in use -- trend and % of total capacity",status:"todo"},
+        {id:"10a3",name:"Long stay patients: 7+, 14+, 21+ days trend",status:"todo"},
+        {id:"10a4",name:"Average length of stay vs national average",detail:"Extract from reference costs data. LOS already in raw data.",status:"todo"}
+      ]},
+      {label:"Delayed discharge intelligence",tasks:[
+        {id:"10b1",name:"Delayed discharge bed days lost per month -- live",status:"done"},
+        {id:"10b2",name:"Blocked beds cost calculator -- live",costTag:"GBP 345/delayed day",status:"done"},
+        {id:"10b3",name:"Delayed discharge reason breakdown",status:"todo"},
+        {id:"10b4",name:"Delayed discharge trend: improving or worsening",status:"todo"}
+      ]},
+      {label:"Appointment and theatre efficiency",tasks:[
+        {id:"10c1",name:"Outpatient DNA rate -- live",costTag:"GBP 120/appointment",status:"done"},
+        {id:"10c2",name:"DNA financial cost waterfall chart",status:"todo"},
+        {id:"10c3",name:"Hospital cancellation rate trend",status:"todo"},
+        {id:"10c4",name:"Cancelled elective operations -- live",status:"done"},
+        {id:"10c5",name:"Theatre efficiency proxy score",status:"todo"},
+        {id:"10c6",name:"Unit cost per elective admission vs national average -- live via reference costs",status:"done"}
+      ]},
+      {label:"Efficiency radar chart",tasks:[
+        {id:"10d1",name:"Six-dimension efficiency radar chart per trust",status:"todo"},
+        {id:"10d2",name:"Efficiency peer comparison: this trust vs regional average",status:"todo"}
+      ]}
+    ]
+  },
+  {
+    id:11, title:"Cost-cutting intelligence and false economy detector", numClass:"p11",
+    sections:[
+      {label:"False economy detector",tasks:[
+        {id:"11a1",name:"Build false economy assessment logic",detail:"For each proposed cost-cutting action assess whether it will save or cost more. Requires correlation engine, reference costs, LOS, and never events data.",status:"todo"},
+        {id:"11a2",name:"Agency cut false economy check",detail:"If sickness rising and permanent staff at capacity, agency reduction risks bank escalation at higher cost.",status:"todo"},
+        {id:"11a3",name:"Non-clinical post cut false economy check",detail:"If LOS above average, admin reduction worsens discharge coordination.",status:"todo"},
+        {id:"11a4",name:"Bed closure false economy check",detail:"If occupancy above 85%, closing beds pushes trust into exponential A&E deterioration.",status:"todo"},
+        {id:"11a5",name:"Build false economy summary table per trust",detail:"Table showing proposed cut, likely saving, hidden cost risk, net assessment. All numbers cited.",status:"todo"},
+        {id:"11a6",name:"Reference cost unit false economy check",detail:"If trust below national average on unit cost, further cuts risk quality degradation. If above, quantify saving potential.",status:"done"},
+        {id:"11a7",name:"Estates investment false economy check",detail:"Deferring high-risk backlog maintenance increases probability of ward/theatre closure. Quantify using ERIC high-risk backlog cost.",status:"todo"}
+      ]},
+      {label:"Temporary staffing cost pressure",tasks:[
+        {id:"11b1",name:"Agency spend vs 30% reduction target",detail:"BLOCKED until agency spend data available.",status:"blocked"},
+        {id:"11b2",name:"Bank vs agency spend stacked bar chart",detail:"BLOCKED.",status:"blocked"},
+        {id:"11b3",name:"Agency cap breach frequency as proxy",detail:"Use never events and high sickness as proxy for agency pressure since direct data blocked.",status:"todo"}
+      ]},
+      {label:"Productivity and efficiency saving signals",tasks:[
+        {id:"11c1",name:"Productivity growth score and trend",status:"todo"},
+        {id:"11c2",name:"Productivity vs peer comparison chart",status:"todo"},
+        {id:"11c3",name:"Estimated cost of underperformance vs best-in-region",status:"todo"},
+        {id:"11c4",name:"Priority action summary for directors",detail:"Auto-generated top 3 efficiency improvements with financial impact and source.",status:"todo"},
+        {id:"11c5",name:"Reference cost benchmarking section -- live",status:"done"}
+      ]}
+    ]
+  },
+  {
+    id:12, title:"Flask app -- full product build", numClass:"p12",
+    tasks:[
+      {id:"12a",name:"app.py -- Flask application",files:["app.py"],status:"done"},
+      {id:"12b",name:"Public landing page",files:["templates/landing.html"],status:"todo"},
+      {id:"12c",name:"National authenticated dashboard -- live 21R/181A/19G",files:["templates/index.html"],status:"done"},
+      {id:"12d",name:"Trust detail page -- domain scores, charts, insight panels -- live",files:["templates/trust.html"],status:"done"},
+      {id:"12e",name:"Trust detail page -- complaints, never events, estates sections",detail:"Add after complaints.py and never_events.py complete.",files:["templates/trust.html"],status:"todo"},
+      {id:"12f",name:"Trust detail page -- correlation insights panel",detail:"Show causal chain: which signals predict which outcomes at this trust.",files:["templates/trust.html"],status:"todo"},
+      {id:"12g",name:"Trust detail page -- projection panel",detail:"Show 90-day projections for A&E, sickness, beds, RTT.",files:["templates/trust.html"],status:"todo"},
+      {id:"12h",name:"Trust detail page -- false economy detector section",files:["templates/trust.html"],status:"todo"},
+      {id:"12i",name:"Compare page -- side by side up to 5 trusts -- live",files:["templates/compare.html"],status:"done"},
+      {id:"12j",name:"Board-ready PDF report generator",files:["app/helpers/pdf_report.py"],status:"todo"},
+      {id:"12k",name:"Monthly email digest for authenticated users",files:["app/helpers/email_digest.py"],status:"todo"},
+      {id:"12l",name:"Data management page",files:["templates/upload.html"],status:"todo"},
+      {id:"12m",name:"Methodology page",files:["templates/methodology.html"],status:"todo"},
+      {id:"12n",name:"Test full app end to end",status:"todo"}
+    ]
+  },
+  {
+    id:13, title:"Authentication -- Flask-Login", numClass:"p13",
+    sections:[
+      {label:"Option B: Manual user creation (minimum for live)",tasks:[
+        {id:"13a1",name:"Install Flask-Login and Flask-SQLAlchemy",files:["requirements.txt"],status:"todo"},
+        {id:"13a2",name:"Build User model with roles",files:["app/models.py"],status:"todo"},
+        {id:"13a3",name:"Build login and logout routes",files:["templates/login.html"],status:"todo"},
+        {id:"13a4",name:"Add login_required to all authenticated routes",status:"todo"},
+        {id:"13a5",name:"Build admin page for manual user creation",files:["templates/admin.html"],status:"todo"},
+        {id:"13a6",name:"Seed admin and demo accounts and test",status:"todo"}
+      ]},
+      {label:"Option C: Self-service registration (Phase 2)",tasks:[
+        {id:"13b1",name:"Build registration page and route",files:["templates/register.html"],status:"todo"},
+        {id:"13b2",name:"Add email verification flow",files:["app/helpers/email.py"],status:"todo"},
+        {id:"13b3",name:"Build password reset flow",files:["templates/reset.html"],status:"todo"},
+        {id:"13b4",name:"Add pending approval and admin approval flow",status:"todo"},
+        {id:"13b5",name:"Add user profile page",files:["templates/profile.html"],status:"todo"},
+        {id:"13b6",name:"Test full Option C flow end to end",status:"todo"}
+      ]}
+    ]
+  },
+  {
+    id:14, title:"Power BI dashboard -- 8 pages with full DAX suite", numClass:"p14",
+    sections:[
+      {label:"Data preparation",tasks:[
+        {id:"14a1",name:"Export all processed files in Power BI-ready format",status:"done"},
+        {id:"14a2",name:"Build date table for time intelligence",status:"todo"},
+        {id:"14a3",name:"Build trust master dimension table",status:"todo"}
+      ]},
+      {label:"Dashboard pages",tasks:[
+        {id:"14b1",name:"Page 1: Executive summary scorecard",status:"todo"},
+        {id:"14b2",name:"Page 2: A&E performance deep dive",status:"todo"},
+        {id:"14b3",name:"Page 3: Workforce and sickness",status:"todo"},
+        {id:"14b4",name:"Page 4: Elective care, cancer and diagnostics",status:"todo"},
+        {id:"14b5",name:"Page 5: Operational efficiency",status:"todo"},
+        {id:"14b6",name:"Page 6: Cost-cutting intelligence and false economy",status:"todo"},
+        {id:"14b7",name:"Page 7: Trust peer comparison",status:"todo"},
+        {id:"14b8",name:"Page 8: Quality, safety and patient experience",status:"todo"}
+      ]},
+      {label:"Slicers and DAX",tasks:[
+        {id:"14c1",name:"Trust name, region, financial year, month slicers",status:"todo"},
+        {id:"14c2",name:"RAG flag and trend direction slicers",status:"todo"},
+        {id:"14c3",name:"Trust type slicer",status:"todo"},
+        {id:"14d1",name:"MOM and YOY change measures for all key metrics",status:"todo"},
+        {id:"14d2",name:"Rolling 3 and 12 month average measures",status:"todo"},
+        {id:"14d3",name:"Composite risk and efficiency score measures",status:"todo"},
+        {id:"14d4",name:"Cost estimate measures -- all five streams",status:"todo"}
+      ]},
+      {label:"Publishing",tasks:[
+        {id:"14e1",name:"Publish to Power BI Service with scheduled refresh",status:"todo"},
+        {id:"14e2",name:"Link Power BI dashboard from authenticated Flask app",status:"todo"},
+        {id:"14e3",name:"Add all 8 dashboard screenshots to README",status:"todo"}
+      ]}
+    ]
+  },
+  {
+    id:15, title:"Prevention gap module", numClass:"p15",
+    tasks:[
+      {id:"15a",name:"Build pipeline/clean/prevention.py",detail:"Join Sport England to PHE Fingertips. Pending Fingertips API recovery.",status:"todo"},
+      {id:"15b",name:"Build choropleth map: inactivity vs NHS demand",status:"todo"},
+      {id:"15c",name:"Add prevention tab to authenticated Flask dashboard",status:"todo"},
+      {id:"15d",name:"Add prevention page to Power BI dashboard",status:"todo"}
+    ]
+  },
+  {
+    id:16, title:"Deployment -- Hugging Face Spaces", numClass:"p16",
+    tasks:[
+      {id:"16a",name:"Docker Desktop installed and verified",status:"done"},
+      {id:"16b",name:"Write Dockerfile for Flask app",files:["Dockerfile"],status:"todo"},
+      {id:"16c",name:"Build and test Docker image locally",status:"todo"},
+      {id:"16d",name:"Create Hugging Face account and new Space",status:"todo"},
+      {id:"16e",name:"Push to Hugging Face via git or GitHub sync",status:"todo"},
+      {id:"16f",name:"Set environment variables on Hugging Face",status:"todo"},
+      {id:"16g",name:"Test live deployment end to end",status:"todo"},
+      {id:"16h",name:"Write README.md with live demo link",files:["README.md"],status:"todo"},
+      {id:"16i",name:"requirements.txt and Procfile committed",files:["requirements.txt","Procfile"],status:"done"}
+    ]
+  },
+  {
+    id:17, title:"NHS compliance -- commercial prerequisites", numClass:"p17",
+    tasks:[
+      {id:"17a",name:"Register company at Companies House",deadlineTag:"Before any POC approach",status:"todo"},
+      {id:"17b",name:"Obtain Cyber Essentials Basic certification",deadlineTag:"Before G-Cloud application",status:"todo"},
+      {id:"17c",name:"Complete DTAC self-assessment",deadlineTag:"Before first NHS meeting",status:"todo"},
+      {id:"17d",name:"Draft privacy policy and terms of service",status:"todo"},
+      {id:"17e",name:"Verify GDPR compliance for data processing",status:"todo"}
+    ]
+  },
+  {
+    id:18, title:"Go-to-market -- POC approach and commercial sales", numClass:"p18",
+    sections:[
+      {label:"POC preparation",tasks:[
+        {id:"18a1",name:"Write one-page product brief for directors",status:"todo"},
+        {id:"18a2",name:"Prepare trust-specific demo",status:"todo"},
+        {id:"18a3",name:"Prepare three-part demo structure",status:"todo"},
+        {id:"18a4",name:"Identify right POC contacts at 3 target trusts",status:"todo"}
+      ]},
+      {label:"Formal routes to market",tasks:[
+        {id:"18b1",name:"Register on G-Cloud Digital Marketplace",deadlineTag:"After Cyber Essentials",status:"todo"},
+        {id:"18b2",name:"Register on Health Systems Support Framework",status:"todo"},
+        {id:"18b3",name:"Register on Dynamic Market",status:"todo"}
+      ]},
+      {label:"Pricing",tasks:[
+        {id:"18c1",name:"Set pricing tiers",detail:"Single trust GBP 8-12k/year. ICB bundle GBP 30-50k. Regional GBP 80-120k.",status:"done"},
+        {id:"18c2",name:"Build financial ROI case for buyers",status:"todo"},
+        {id:"18c3",name:"Draft standard POC agreement",status:"todo"}
+      ]}
+    ]
+  },
+  {
+    id:19, title:"Innovator Founder Visa preparation", numClass:"p19",
+    sections:[
+      {label:"Timeline",tasks:[
+        {id:"19a1",name:"Consult UK immigration solicitor",deadlineTag:"Do this now",status:"todo"},
+        {id:"19a2",name:"Research approved endorsing bodies",deadlineTag:"June 2026",status:"todo"},
+        {id:"19a3",name:"Prepare business plan for endorsement",deadlineTag:"July 2026",status:"todo"}
+      ]},
+      {label:"Endorsement application",tasks:[
+        {id:"19b1",name:"Write innovation statement",status:"todo"},
+        {id:"19b2",name:"Write viability statement",status:"todo"},
+        {id:"19b3",name:"Write scalability statement",status:"todo"},
+        {id:"19b4",name:"Compile evidence of capability",status:"todo"},
+        {id:"19b5",name:"Submit endorsement application",deadlineTag:"Aug-Sep 2026",status:"todo"}
+      ]},
+      {label:"Visa switch",tasks:[
+        {id:"19c1",name:"Submit Innovator Founder Visa switch",deadlineTag:"Oct-Nov 2026",status:"todo"},
+        {id:"19c2",name:"Begin self-employment on endorsement receipt",status:"todo"},
+        {id:"19c3",name:"Understand ILR milestones at 3 years",status:"todo"}
+      ]}
+    ]
+  },
+  {
+    id:20, title:"Portfolio and career parallel track", numClass:"p20",
+    tasks:[
+      {id:"20a",name:"Complete GitHub README for TrustPulse repo",files:["README.md"],status:"todo"},
+      {id:"20b",name:"Add TrustPulse to LinkedIn and CV",status:"todo"},
+      {id:"20c",name:"Add Power BI dashboard screenshots to GitHub README",status:"todo"},
+      {id:"20d",name:"Prepare TrustPulse walkthrough for interviews",status:"todo"},
+      {id:"20e",name:"Target NHS Band 5 analyst applications",status:"todo"},
+      {id:"20f",name:"PL-300 certification preparation",status:"todo"},
+      {id:"20g",name:"NHS A&E analysis as second GitHub portfolio project",status:"todo"}
+    ]
+  },
+  {
+    id:21, title:"New data -- SHMI, cancer, diagnostics, reference costs, FFT (all done)", numClass:"p21",
+    sections:[
+      {label:"SHMI -- DONE",tasks:[
+        {id:"21a1",name:"Download SHMI CSVs -- 37 zips Apr 2022-Dec 2025",files:["data/raw/shmi/"],status:"done"},
+        {id:"21a2",name:"Run shmi.py ingest -- 120 trusts, 4,035 rows",files:["data/processed/shmi_clean.csv"],status:"done"},
+        {id:"21a3",name:"Add SHMI to join.py and D5 scoring -- weight 20%",status:"done"}
+      ]},
+      {label:"Cancer waiting times -- DONE",tasks:[
+        {id:"21b1",name:"Download CWT Combined CSV files -- 5 files Apr 2022-Mar 2026",files:["data/raw/cancer_waiting/"],status:"done"},
+        {id:"21b2",name:"Run cancer_waiting.py -- 200 trusts, 7,106 rows",files:["data/processed/cancer_waiting_clean.csv"],status:"done"},
+        {id:"21b3",name:"Add to D2 scoring -- FDS 20%, 62D 15%",status:"done"}
+      ]},
+      {label:"Diagnostics -- DONE",tasks:[
+        {id:"21c1",name:"Download diagnostics Provider XLS -- 24 files Apr 2024-Mar 2026",files:["data/raw/diagnostics/"],status:"done"},
+        {id:"21c2",name:"Run diagnostics.py -- 167 trusts, 10,750 rows",files:["data/processed/diagnostics_clean.csv"],status:"done"},
+        {id:"21c3",name:"Add to D2 scoring -- 6-week wait 15%",status:"done"}
+      ]},
+      {label:"Reference costs -- DONE",tasks:[
+        {id:"21d1",name:"Download NCC 2024-25 organisation level files",files:["data/raw/reference_costs/"],status:"done"},
+        {id:"21d2",name:"Run reference_costs.py -- 206 providers, £113.5bn",files:["data/processed/reference_costs_clean.csv"],status:"done"},
+        {id:"21d3",name:"Add to join.py as snapshot. Contextual signal in D4.",status:"done"}
+      ]},
+      {label:"FFT inpatient -- DONE",tasks:[
+        {id:"21e1",name:"Download FFT inpatient xlsm files -- 48 files Apr 2022-Mar 2026",files:["data/raw/fft/"],status:"done"},
+        {id:"21e2",name:"Run fft.py -- 164 trusts, 7,348 rows",files:["data/processed/fft_clean.csv"],status:"done"},
+        {id:"21e3",name:"Add to D5 scoring -- weight 8%",status:"done"}
+      ]}
+    ]
+  },
+  {
+    id:22, title:"Sickness breakdown pipeline -- DONE", numClass:"p22",
+    tasks:[
+      {id:"22a",name:"Inspect sickness raw files for staff group and reason columns",status:"done"},
+      {id:"22b",name:"Build pipeline/ingest/sickness_detail.py",detail:"287 orgs, 25 files, Jan 2024-Jan 2026. 27 staff groups, 25 absence reasons. MH flag > 30%. DONE.",files:["pipeline/ingest/sickness_detail.py"],status:"done"},
+      {id:"22c",name:"Add MH sickness flag to D3 scoring -- Red > 35%, Amber > 30%",status:"done"},
+      {id:"22d",name:"Add sickness detail to join.py",status:"done"},
+      {id:"22e",name:"Build sickness vs A&E lag correlation per trust",detail:"Requires correlation engine (Phase 26).",status:"todo"},
+      {id:"22f",name:"Add sickness by staff group charts to trust.html",status:"done"}
+    ]
+  },
+  {
+    id:23, title:"Scoring engine enhancements", numClass:"p23",
+    tasks:[
+      {id:"23a",name:"D2: cancer FDS 20%, 62D 15%, diagnostics 15%, RTT 35%, 52wk 15% -- DONE",status:"done"},
+      {id:"23b",name:"D3: sickness 40%, nursing 25%, vacancy 15%, MH flag 20% -- DONE",status:"done"},
+      {id:"23c",name:"D4: oversight 40%, finance variance 30%, productivity 30% -- DONE",status:"done"},
+      {id:"23d",name:"D5: SHMI 20%, CQC 18%, beds 15%, discharge 12%, cancelled 12%, cdiff 8%, DNA 7%, FFT 8% -- DONE",status:"done"},
+      {id:"23e",name:"Deficit penalty: +5 points to composite for deficit trusts -- DONE",status:"done"},
+      {id:"23f",name:"Add complaints to D5 scoring after complaints.py complete",status:"todo"},
+      {id:"23g",name:"Add never events to D5 scoring after never_events.py complete",status:"todo"},
+      {id:"23h",name:"Update narrative generator for all new signals",detail:"Complaints, never events, estates backlog, specialty RTT patterns.",status:"todo"},
+      {id:"23i",name:"Re-run full pipeline after all new data and validate",detail:"Verify 9,624 rows maintained. Verify score changes explainable.",status:"todo"}
+    ]
+  },
+  {
+    id:24, title:"Data refresh automation and pipeline maintenance", numClass:"p24",
+    tasks:[
+      {id:"24a",name:"Build monthly data refresh checklist",detail:"Which datasets publish monthly, quarterly, annually. Document expected publish dates.",status:"todo"},
+      {id:"24b",name:"Build pipeline/refresh.py -- data staleness checker",files:["pipeline/refresh.py"],status:"todo"},
+      {id:"24c",name:"Update run_pipeline.py to include all new ingest scripts",files:["pipeline/run_pipeline.py"],status:"todo"},
+      {id:"24d",name:"Update validate.py for all new datasets",files:["pipeline/validate.py"],status:"todo"},
+      {id:"24e",name:"Build quarterly update process documentation",files:["docs/data_refresh_guide.md"],status:"todo"},
+      {id:"24f",name:"Q4 2025/26 finance update when published",deadlineTag:"July 2026",status:"todo"}
+    ]
+  },
+  {
+    id:25, title:"P1: Download all remaining available datasets", numClass:"p25",
+    sections:[
+      {label:"NHS Written Complaints -- annual trust-level",tasks:[
+        {id:"25a1",name:"Download complaints 2024-25 from NHS Digital",detail:"Source: digital.nhs.uk/data-and-information/publications/statistical/data-on-written-complaints-in-the-nhs/2024-25. KO41a HCHS secondary care complaints by trust. 113,780 HCHS complaints.",files:["data/raw/complaints/"],status:"todo"},
+        {id:"25a2",name:"Download complaints 2023-24",detail:"Same source, archived publication.",files:["data/raw/complaints/"],status:"todo"},
+        {id:"25a3",name:"Download complaints 2022-23",detail:"Same source, archived publication.",files:["data/raw/complaints/"],status:"todo"}
+      ]},
+      {label:"ERIC Estates Returns -- annual trust-level",tasks:[
+        {id:"25b1",name:"Download ERIC 2024-25 from NHS Digital",detail:"Source: digital.nhs.uk/data-and-information/publications/statistical/estates-returns-information-collection/summary-page-and-dataset-for-eric-2024-25. Backlog maintenance cost, high-risk backlog, estate running costs per trust.",files:["data/raw/estates/"],status:"todo"},
+        {id:"25b2",name:"Download ERIC 2023-24",files:["data/raw/estates/"],status:"todo"},
+        {id:"25b3",name:"Download ERIC 2022-23",files:["data/raw/estates/"],status:"todo"}
+      ]},
+      {label:"Never Events -- annual and provisional",tasks:[
+        {id:"25c1",name:"Download Never Events 2024-25 full year report",detail:"Source: england.nhs.uk/patient-safety/never-events-data/. 421 incidents, trust-level counts.",files:["data/raw/never_events/"],status:"todo"},
+        {id:"25c2",name:"Download Never Events 2023-24 full year report",files:["data/raw/never_events/"],status:"todo"},
+        {id:"25c3",name:"Download Never Events 2022-23 full year report",files:["data/raw/never_events/"],status:"todo"},
+        {id:"25c4",name:"Download Never Events 2025-26 provisional (Apr-Dec 2025)",detail:"305 incidents as of January 2026.",files:["data/raw/never_events/"],status:"todo"}
+      ]},
+      {label:"Specialty RTT -- WLMDS weekly data",tasks:[
+        {id:"25d1",name:"Download WLMDS provider-level weekly files",detail:"Source: england.nhs.uk/statistics/statistical-work-areas/rtt-waiting-times/wlmds/. Weekly CSV files showing waiting list by specialty and provider. Download last 12 months.",files:["data/raw/rtt_specialty/"],status:"todo"},
+        {id:"25d2",name:"Check WLMDS file structure and specialty codes",detail:"Identify top 10 specialties by volume: orthopaedics, ophthalmology, general surgery, cardiology, etc.",status:"todo"}
+      ]},
+      {label:"Digital Maturity Assessment 2025",tasks:[
+        {id:"25e1",name:"Download DMA 2025 from NHS England",detail:"205 trusts. EPR integration scores, data flow maturity. Source: NHS England DMA publication page.",files:["data/raw/digital_maturity/"],status:"todo"}
+      ]},
+      {label:"NHS Oversight League Tables 2025-26",tasks:[
+        {id:"25f1",name:"Download NHS Oversight League Tables Q2 2025-26",detail:"Source: england.nhs.uk/nhs-oversight-framework/segmentation-and-league-tables/. AMR and IMR rankings per trust.",files:["data/raw/oversight/league_tables/"],status:"todo"}
+      ]},
+      {label:"MBRRACE-UK Perinatal Mortality",tasks:[
+        {id:"25g1",name:"Download MBRRACE-UK annual report 2024",detail:"Source: mbrrace-uk.org. Trust-level stillbirth and neonatal death rates per 1,000 births. For trusts with maternity services only.",files:["data/raw/maternity/"],status:"todo"}
+      ]},
+      {label:"Data Security and Protection Toolkit",tasks:[
+        {id:"25h1",name:"Download DSPT scores 2024-25",detail:"Source: dsptoolkit.nhs.uk. Annual trust-level cyber maturity scores. Useful for digital maturity false economy analysis.",files:["data/raw/dspt/"],status:"todo"}
+      ]}
+    ]
+  },
+  {
+    id:26, title:"P3: Correlation engine -- causal chain analysis", numClass:"p26",
+    tasks:[
+      {id:"26a",name:"Build pipeline/correlations.py -- lag correlation calculator",detail:"For each trust calculate Pearson correlation with lag (0, 1, 2, 3 months) between: sickness and A&E 4hr, bed occupancy and 12hr breaches, delayed discharge and RTT, nursing FTE and sickness rate, FFT scores and CQC ratings. Output strongest lag and r-value per trust per relationship.",files:["pipeline/correlations.py"],status:"todo"},
+      {id:"26b",name:"Build national correlation heatmap",detail:"For all 221 trusts: show average correlation coefficients between all key signals. Identify which pairs are most strongly correlated nationally.",status:"todo"},
+      {id:"26c",name:"Add per-trust correlation results to trust_risk_scores.csv",detail:"Columns: corr_sick_ae_lag, corr_sick_ae_r, corr_occ_breach_lag, corr_occ_breach_r, corr_dtoc_rtt_lag, corr_dtoc_rtt_r. These feed into the causal chain narrative.",status:"todo"},
+      {id:"26d",name:"Build causal chain narrative generator",detail:"For each Red trust generate a plain English causal chain: e.g. Nursing sickness has been rising for 3 months -- historically this predicts A&E deterioration with a 2-month lag at this trust (r=0.78). A&E 4hr performance is projected to fall from 71% to 65% by September.",status:"todo"},
+      {id:"26e",name:"Add causal chain panel to trust.html",detail:"New collapsible section showing the strongest predictive relationships for this trust with evidence.",files:["templates/trust.html"],status:"todo"},
+      {id:"26f",name:"Add sickness vs A&E lag chart to trust.html",detail:"Two-axis chart with sickness rate and A&E performance, lagged to show predictive relationship.",files:["templates/trust.html"],status:"todo"}
+    ]
+  },
+  {
+    id:27, title:"P4: Projection engine -- 90-day forward view", numClass:"p27",
+    tasks:[
+      {id:"27a",name:"Build pipeline/projections.py -- linear trend projection",detail:"For each trust for each key metric (A&E 4hr, sickness rate, bed occupancy, RTT, 52-week waiters): fit linear regression to last 6 months of data. Project 3 months forward. Calculate 95% confidence interval.",files:["pipeline/projections.py"],status:"todo"},
+      {id:"27b",name:"Flag trusts projected to breach threshold in 90 days",detail:"If A&E projected to fall below 76% in 90 days -- flag as imminent breach. If sickness projected to exceed 7% -- flag as deteriorating. Add projected_breach_ae, projected_breach_sickness etc. to trust_risk_scores.csv.",status:"todo"},
+      {id:"27c",name:"Add projection results to trust_risk_scores.csv",detail:"Columns per metric: proj_90d_value, proj_90d_lower, proj_90d_upper, proj_direction (improving/stable/deteriorating), proj_breach_flag.",status:"todo"},
+      {id:"27d",name:"Add projection panel to trust.html",detail:"For each key metric: current value, trend arrow, projected value in 90 days with confidence band. Plain English: This trust is on track to breach the 76% A&E standard by August 2026 if current trajectory continues.",files:["templates/trust.html"],status:"todo"},
+      {id:"27e",name:"Add projected breach trusts to national dashboard",detail:"Warning section on index.html: X trusts projected to deteriorate to Red in next 90 days.",files:["templates/index.html"],status:"todo"},
+      {id:"27f",name:"Test projections against historical data",detail:"Back-test: use data to March 2025, project to June 2025, compare to actuals. Document accuracy.",status:"todo"}
+    ]
+  },
+  {
+    id:28, title:"P5: Never events -- patient safety signal", numClass:"p28",
+    tasks:[
+      {id:"28a",name:"Build pipeline/ingest/never_events.py",detail:"Parse annual never events reports. Extract trust-level counts by event type. Calculate rate per 10,000 admissions using activity from reference costs or A&E data.",files:["pipeline/ingest/never_events.py"],status:"todo"},
+      {id:"28b",name:"Add never events to join.py as annual snapshot",detail:"Join on org_code. Multiple years for trend.",status:"todo"},
+      {id:"28c",name:"Add rag_never_events to analyse.py",detail:"Rate per 10,000 admissions. Red > 90th percentile, Amber > 75th percentile. Add to D5 scoring.",status:"todo"},
+      {id:"28d",name:"Add never events cost estimate to methodology",detail:"Approximately GBP 100,000 per incident (investigation, remediation, litigation risk). Source: NHS Resolution.",costTag:"~GBP 100,000/incident",status:"todo"},
+      {id:"28e",name:"Add never events panel to trust.html",detail:"Annual count, rate per 10,000, type breakdown, trend vs prior year. Disclaimer: provisional data subject to change.",files:["templates/trust.html"],status:"todo"},
+      {id:"28f",name:"Correlate never events with CQC Safe rating and SHMI",detail:"Trusts with High SHMI + poor CQC Safe + high never events rate = governance emergency flag.",status:"todo"}
+    ]
+  },
+  {
+    id:29, title:"P7: Specialty RTT breakdown", numClass:"p29",
+    tasks:[
+      {id:"29a",name:"Build pipeline/ingest/rtt_specialty.py",detail:"Parse WLMDS weekly provider-level files. Extract waiting list size and 18-week performance by specialty per trust. Aggregate to monthly for consistency with other data.",files:["pipeline/ingest/rtt_specialty.py"],status:"todo"},
+      {id:"29b",name:"Add specialty RTT to join.py as monthly join",detail:"Top 10 specialties by volume. Columns: rtt_ortho_waiting, rtt_ortho_pct18wk, rtt_ophthal_waiting, rtt_ophthal_pct18wk, etc.",status:"todo"},
+      {id:"29c",name:"Build specialty RTT section in trust.html",detail:"Ranked list of specialties by waiting list size and 18-week performance. Shows which specialties are the primary driver of the trust backlog.",files:["templates/trust.html"],status:"todo"},
+      {id:"29d",name:"Add specialty concentration signal to false economy detector",detail:"If 60% of waiters are in one specialty, cutting generic elective capacity is a false economy -- it needs specialty-specific investment.",status:"todo"}
+    ]
+  },
+  {
+    id:30, title:"P8: Length of stay from reference costs", numClass:"p30",
+    tasks:[
+      {id:"30a",name:"Extract LOS from reference costs raw data",detail:"NCC Org File 1 (unadjusted) contains activity counts and LOS data at HRG level. Aggregate to trust level: average LOS for elective admission, emergency admission, day case.",files:["pipeline/ingest/reference_costs.py"],status:"todo"},
+      {id:"30b",name:"Add LOS metrics to reference_costs_clean.csv",detail:"Columns: rc_elective_los_avg, rc_emergency_los_avg, rc_daycase_pct. Compare to national average.",status:"todo"},
+      {id:"30c",name:"Add LOS to join.py and analyse.py",detail:"Snapshot join. If trust LOS 20% above national average: flag in D5. High LOS + high bed occupancy = capacity crisis.",status:"todo"},
+      {id:"30d",name:"Add LOS to false economy detector",detail:"If LOS above average, reducing admin or discharge coordination staff will worsen LOS and increase bed costs.",status:"todo"},
+      {id:"30e",name:"Add LOS section to trust.html",detail:"Elective and emergency LOS vs national average. Trend if multiple years available. Cost implication of excess LOS.",files:["templates/trust.html"],status:"todo"}
+    ]
+  },
+  {
+    id:31, title:"P9: False economy detector -- complete build", numClass:"p31",
+    tasks:[
+      {id:"31a",name:"Build false economy assessment engine in analyse.py",detail:"For each trust evaluate 7 false economy checks: agency cut, non-clinical post cut, bed closure, diagnostic capacity cut, training budget cut, estates deferral, IT investment deferral. Each check: proposed saving, hidden cost risk, net assessment (Green/Amber/Red).",status:"todo"},
+      {id:"31b",name:"Agency cut check -- sickness + vacancy + LOS triangulation",detail:"If nursing sickness > 7% AND vacancy > 10% AND LOS above average: agency cut = Red false economy. Cutting agency costs more in bank escalation and patient harm.",status:"todo"},
+      {id:"31c",name:"Bed closure check -- occupancy + discharge + A&E triangulation",detail:"If occupancy > 90% AND delayed discharge > 75th percentile AND A&E below 76%: bed closure = Red false economy.",status:"todo"},
+      {id:"31d",name:"Diagnostic capacity cut check -- cancer + RTT + complaints",detail:"If cancer FDS below 75% AND diagnostic 6-week wait above 20%: cutting diagnostic capacity = Red false economy.",status:"todo"},
+      {id:"31e",name:"Estates deferral check -- ERIC high-risk backlog",detail:"If high-risk backlog above GBP 50m: deferring maintenance = Red false economy. Risk of ward closure higher than maintenance cost.",status:"todo"},
+      {id:"31f",name:"Build false economy summary table per trust in trust.html",detail:"Table with columns: Risk area, Proposed saving, Hidden cost, Net assessment, Evidence. All numbers cited.",files:["templates/trust.html"],status:"todo"},
+      {id:"31g",name:"Add false economy score to composite",detail:"Number of Red false economy flags. Add as a red flag count not a domain score -- it is a governance signal not an operational one.",status:"todo"},
+      {id:"31h",name:"Add false economy section to national dashboard",detail:"Trusts with 3+ Red false economy flags should be highlighted as being at risk of making their situation worse.",files:["templates/index.html"],status:"todo"}
+    ]
+  },
+  {
+    id:32, title:"P10: App completeness audit and quality pass", numClass:"p32",
+    tasks:[
+      {id:"32a",name:"Full data audit -- verify all 560 columns are used or documented",detail:"Check trust_risk_scores.csv. Every column should appear in at least one of: trust.html, scoring, cost estimate, narrative, or methodology.",status:"todo"},
+      {id:"32b",name:"Null rate audit -- investigate any column above 50% null",detail:"For each high-null column: is it expected (e.g. ambulance data only 5 months) or a join problem?",status:"todo"},
+      {id:"32c",name:"Trust coverage audit -- verify all 221 trusts score on all 5 domains",detail:"Flag any trust with Unknown on more than 3 domain RAGs.",status:"todo"},
+      {id:"32d",name:"Scoring sense check -- validate top 20 Red trusts against public knowledge",detail:"Cross-check against NHS Oversight segments, CQC ratings, press coverage. Flag any trust that should be Red but isn't.",status:"todo"},
+      {id:"32e",name:"Cost estimate audit -- verify total inefficiency figure and per-trust figures",detail:"Verify GBP 6.85bn total is plausible. Check top 5 trusts by estimated inefficiency.",status:"todo"},
+      {id:"32f",name:"Narrative quality check -- read 10 auto-generated narratives",detail:"Do they read naturally? Do they correctly identify the most important signals? Do they avoid over-claiming?",status:"todo"},
+      {id:"32g",name:"Mobile responsiveness check",detail:"Test trust.html and index.html on mobile viewport.",status:"todo"},
+      {id:"32h",name:"Chart rendering check -- verify all Plotly charts load correctly",detail:"Test on Chrome, Edge, Safari.",status:"todo"},
+      {id:"32i",name:"Disclaimer and methodology check",detail:"Every cost estimate shows formula and source. SHMI disclaimer present. All provisional data flagged.",status:"todo"},
+      {id:"32j",name:"Performance check -- page load time for trust profile",detail:"With 560 columns and 4 charts, ensure trust page loads under 3 seconds.",status:"todo"}
+    ]
+  },
+  {
+    id:33, title:"P11: Authentication", numClass:"p33",
+    sections:[
+      {label:"Option B: Manual user creation (minimum for live)",tasks:[
+        {id:"33a1",name:"Install Flask-Login and Flask-SQLAlchemy",files:["requirements.txt"],status:"todo"},
+        {id:"33a2",name:"Build User model: id, email, password_hash, role, created_at, last_login",files:["app/models.py"],status:"todo"},
+        {id:"33a3",name:"Build login page and route",files:["templates/login.html"],status:"todo"},
+        {id:"33a4",name:"Build logout route",status:"todo"},
+        {id:"33a5",name:"Add login_required to all trust, dashboard, data routes",status:"todo"},
+        {id:"33a6",name:"Build admin page for manual user creation",files:["templates/admin.html"],status:"todo"},
+        {id:"33a7",name:"Seed admin account with secure password",status:"todo"},
+        {id:"33a8",name:"Test full auth flow: login, access, logout, re-attempt",status:"todo"}
+      ]},
+      {label:"Option C: Self-service registration (Phase 2 post-launch)",tasks:[
+        {id:"33b1",name:"Build registration page and route",files:["templates/register.html"],status:"todo"},
+        {id:"33b2",name:"Email verification on registration",status:"todo"},
+        {id:"33b3",name:"Password reset flow",files:["templates/reset.html"],status:"todo"},
+        {id:"33b4",name:"Admin approval flow for new registrations",status:"todo"},
+        {id:"33b5",name:"User profile page",files:["templates/profile.html"],status:"todo"}
+      ]}
+    ]
+  },
+  {
+    id:34, title:"P12: Deployment -- Hugging Face Spaces", numClass:"p34",
+    tasks:[
+      {id:"34a",name:"Write Dockerfile",detail:"Python 3.11 base. Install requirements.txt. Expose port 7860. CMD gunicorn app:app --bind 0.0.0.0:7860.",files:["Dockerfile"],status:"todo"},
+      {id:"34b",name:"Build and test Docker image locally",detail:"docker build -t trustpulse . && docker run -p 7860:7860 trustpulse. Verify all pages load.",status:"todo"},
+      {id:"34c",name:"Create Hugging Face Space (Docker type, public)",status:"todo"},
+      {id:"34d",name:"Push to Hugging Face via GitHub sync or git remote",status:"todo"},
+      {id:"34e",name:"Set environment variables: SECRET_KEY",status:"todo"},
+      {id:"34f",name:"Test live deployment: dashboard, trust profiles, compare, charts",status:"todo"},
+      {id:"34g",name:"Write README.md with live demo link and full description",files:["README.md"],status:"todo"},
+      {id:"34h",name:"Commit final state to GitHub",status:"todo"}
+    ]
+  }
+];
+
+const statusConfig = {
+  "todo":{label:"To do",cls:"s-todo"},
+  "in-progress":{label:"In progress",cls:"s-in-progress"},
+  "done":{label:"Done",cls:"s-done"},
+  "blocked":{label:"Blocked",cls:"s-blocked"}
+};
+
+function getAllTasks() {
+  const all = [];
+  phases.forEach(p => {
+    if (p.tasks) p.tasks.forEach(t => all.push(t));
+    if (p.sections) p.sections.forEach(s => s.tasks.forEach(t => all.push(t)));
+  });
+  return all;
+}
+
+function loadState() {
+  try { const s = localStorage.getItem(STORAGE_KEY); if (s) return JSON.parse(s); } catch(e) {}
+  const s = {};
+  getAllTasks().forEach(t => { s[t.id] = t.status || "todo"; });
+  return s;
+}
+
+function saveState(s) { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); } catch(e) {} }
+
+let state = loadState();
+
+function countStats() {
+  const all = Object.values(state);
+  return { total:all.length, done:all.filter(s=>s==="done").length, inProgress:all.filter(s=>s==="in-progress").length, blocked:all.filter(s=>s==="blocked").length, todo:all.filter(s=>s==="todo").length };
+}
+
+function renderSummary() {
+  const s = countStats();
+  const pct = Math.round((s.done/s.total)*100);
+  document.getElementById("summary").innerHTML = `
+    <div class="stat"><div class="stat-num">${pct}%</div><div class="stat-label">complete</div></div>
+    <div class="stat"><div class="stat-num">${s.done}</div><div class="stat-label">done</div></div>
+    <div class="stat"><div class="stat-num">${s.inProgress}</div><div class="stat-label">in progress</div></div>
+    <div class="stat"><div class="stat-num">${s.blocked}</div><div class="stat-label">blocked</div></div>
+    <div class="stat"><div class="stat-num">${s.todo}</div><div class="stat-label">to do</div></div>`;
+  document.getElementById("progress-fill").style.width = pct+"%";
+  document.getElementById("pct-label").textContent = pct+"%";
+}
+
+function getPhaseProgress(phase) {
+  const tasks = [];
+  if (phase.tasks) phase.tasks.forEach(t=>tasks.push(t));
+  if (phase.sections) phase.sections.forEach(s=>s.tasks.forEach(t=>tasks.push(t)));
+  const done = tasks.filter(t=>state[t.id]==="done").length;
+  return `${done}/${tasks.length}`;
+}
+
+function renderTask(task) {
+  return `
+    <div class="task status-${state[task.id]}" id="taskrow-${task.id}">
+      <div class="task-status">
+        <select class="status-select ${statusConfig[state[task.id]].cls}" onchange="updateStatus('${task.id}',this.value)">
+          ${Object.entries(statusConfig).map(([val,cfg])=>`<option value="${val}" ${state[task.id]===val?"selected":""}>${cfg.label}</option>`).join("")}
+        </select>
+      </div>
+      <div class="task-body">
+        <p class="task-name">${task.name}</p>
+        ${task.detail?`<p class="task-detail">${task.detail}</p>`:""}
+        <div class="task-meta">
+          ${task.files?task.files.map(f=>`<span class="file-tag">${f}</span>`).join(""):""}
+          ${task.costTag?`<span class="cost-tag">&#128176; ${task.costTag}</span>`:""}
+          ${task.sourceTag?`<span class="source-tag">&#128202; ${task.sourceTag}</span>`:""}
+          ${task.deadlineTag?`<span class="deadline-tag">&#9200; ${task.deadlineTag}</span>`:""}
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderPhases() {
+  document.getElementById("phases").innerHTML = phases.map((phase,idx) => {
+    let html = "";
+    if (phase.tasks) html = phase.tasks.map(t=>renderTask(t)).join("");
+    if (phase.sections) html = phase.sections.map(s=>`<div class="section-label">${s.label}</div>${s.tasks.map(t=>renderTask(t)).join("")}`).join("");
+    const open = idx === 0;
+    return `
+      <div class="phase">
+        <div class="phase-header" onclick="togglePhase(${idx})">
+          <span class="phase-num ${phase.numClass}">Phase ${phase.id}</span>
+          <span class="phase-title">${phase.title}</span>
+          <span class="phase-count">${getPhaseProgress(phase)} done</span>
+          <span class="phase-chevron ${open?"open":""}" id="chevron-${idx}">&#9660;</span>
+        </div>
+        <div class="task-list ${open?"open":""}" id="tasklist-${idx}">${html}</div>
+      </div>`;
+  }).join("");
+}
+
+function togglePhase(idx) {
+  document.getElementById("tasklist-"+idx).classList.toggle("open");
+  document.getElementById("chevron-"+idx).classList.toggle("open");
+}
+
+function updateStatus(taskId, newStatus) {
+  state[taskId] = newStatus;
+  saveState(state);
+  renderSummary();
+  renderPhases();
+  updateTimestamp();
+}
+
+function updateTimestamp() {
+  const now = new Date();
+  document.getElementById("last-updated").textContent = "Last updated: " + now.toLocaleDateString("en-GB",{day:"numeric",month:"long",year:"numeric"}) + " at " + now.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"});
+}
+
+function resetAll() {
+  if (!confirm("Reset all task statuses to To do?")) return;
+  getAllTasks().forEach(t => { state[t.id] = "todo"; });
+  saveState(state); renderSummary(); renderPhases(); updateTimestamp();
+}
+
+renderSummary(); renderPhases(); updateTimestamp();
+</script>
+</body>
+</html>
