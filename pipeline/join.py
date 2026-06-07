@@ -36,6 +36,7 @@ REFERENCE_COSTS_PATH = DATA_DIR / "reference_costs_clean.csv"
 FFT_PATH             = DATA_DIR / "fft_clean.csv"
 COMPLAINTS_PATH      = DATA_DIR / "complaints_clean.csv"
 ESTATES_PATH         = DATA_DIR / "estates_clean.csv"
+NEVER_EVENTS_PATH    = DATA_DIR / "never_events_clean.csv"
 
 MASTER_OUT   = DATA_DIR / "trust_master.csv"
 PROFILES_OUT = DATA_DIR / "trust_profiles.csv"
@@ -662,6 +663,26 @@ def build_estates_metrics():
     return df
 
 
+def build_never_events_metrics():
+    """
+    Load never_events_clean.csv -- annual NHS Never Events per trust.
+    Snapshot join using latest available year per trust.
+    Key signal: ne_count (total never events reported in year).
+    All data is provisional by design. Disclaimer required in app.
+    """
+    if not NEVER_EVENTS_PATH.exists():
+        print("  [WARNING] never_events_clean.csv not found -- skipping")
+        return pd.DataFrame()
+    df = pd.read_csv(NEVER_EVENTS_PATH, parse_dates=["period_date"])
+    df = df.sort_values("period_date", ascending=False)
+    df = df.drop_duplicates(subset=["org_code"], keep="first")
+    keep = ["org_code", "ne_count", "ne_provisional", "financial_year"]
+    keep = [c for c in keep if c in df.columns]
+    df = df[keep].copy()
+    print(f"  Never events    : {len(df)} trusts | latest year snapshot")
+    return df
+
+
 def run():
     print("[join] Starting master join...")
 
@@ -692,6 +713,7 @@ def run():
     fft_metrics             = build_fft_metrics()
     complaints_metrics      = build_complaints_metrics()
     estates_metrics         = build_estates_metrics()
+    never_events_metrics    = build_never_events_metrics()
 
     # ---------------------------------------------------------------------------
     # Join time series datasets onto spine (left join -- keeps all spine rows)
@@ -791,6 +813,10 @@ def run():
     if not estates_metrics.empty:
         master = master.merge(estates_metrics, on="org_code", how="left")
         print(f"  After estates join: {master.shape}")
+
+    if not never_events_metrics.empty:
+        master = master.merge(never_events_metrics, on="org_code", how="left")
+        print(f"  After never events join: {master.shape}")
 
     master = master.merge(cqc_metrics,       on="org_code", how="left")
     master = master.merge(oversight_metrics,  on="org_code", how="left")

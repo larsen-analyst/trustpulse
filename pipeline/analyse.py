@@ -476,6 +476,12 @@ def apply_rags(df):
     df["rag_complaints_upheld"] = safe_col(df, "comp_pct_upheld").apply(
         lambda v: rag_threshold(v, "high", 0.50, 0.35))
 
+    # Never events -- annual count. Red >= 6, Amber >= 3.
+    # Context: national average approximately 2 per trust per year.
+    # Disclaimer: provisional data subject to change.
+    df["rag_never_events"] = safe_col(df, "ne_count").apply(
+        lambda v: rag_threshold(v, "high", 6.0, 3.0))
+
     return df
 
 
@@ -543,17 +549,19 @@ def domain_scores(df):
     d5_fft    = df["rag_fft"].apply(rs_neutral)
     d5_comp_w = df["rag_complaints_waiting"].apply(rs_neutral)
     d5_comp_u = df["rag_complaints_upheld"].apply(rs_neutral)
+    d5_ne     = df["rag_never_events"].apply(rs_neutral)
     df["d5_score"] = (
-        d5_shmi   * 0.18 +
-        d5_cqc    * 0.17 +
-        d5_beds   * 0.14 +
-        d5_dtoc   * 0.11 +
-        d5_canc   * 0.11 +
+        d5_shmi   * 0.17 +
+        d5_cqc    * 0.15 +
+        d5_beds   * 0.13 +
+        d5_dtoc   * 0.10 +
+        d5_canc   * 0.10 +
         d5_cdiff  * 0.07 +
         d5_dna    * 0.07 +
         d5_fft    * 0.08 +
         d5_comp_w * 0.04 +
-        d5_comp_u * 0.03
+        d5_comp_u * 0.03 +
+        d5_ne     * 0.06
     ).clip(0, 100).round(1)
 
     # Domain RAG
