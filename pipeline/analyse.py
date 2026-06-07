@@ -359,6 +359,14 @@ def apply_rags(df):
     df["rag_rtt_52wk"]   = df["waiters_over52_per1000"].apply(
         lambda v: rag_threshold(v, "high", 5.0, 1.0))
 
+    # Cancer 28-day FDS -- target 77%. Red < 70%, Amber < 77%
+    df["rag_cancer_fds"] = safe_col(df, "fds_performance_3m_avg").apply(
+        lambda v: rag_threshold(v, "low", 0.70, 0.77))
+
+    # Cancer 62-day treatment -- target 85%. Red < 70%, Amber < 85%
+    df["rag_cancer_62d"] = safe_col(df, "t62d_performance_3m_avg").apply(
+        lambda v: rag_threshold(v, "low", 0.70, 0.85))
+
     # Workforce
     df["rag_sickness"]   = safe_col(df, "sickness_rate_overall_3m_avg").apply(
         lambda v: rag_threshold(v, "high", 7.0, 5.5))
@@ -454,9 +462,16 @@ def domain_scores(df):
     df["d1_score"] = (d1_4hr * 0.50 + d1_12hr * 0.35 + d1_amb * 0.15).clip(0, 100).round(1)
 
     # Domain 2: Elective care
-    d2_18wk = df["rag_rtt_18wk"].apply(rs)
-    d2_52wk = df["rag_rtt_52wk"].apply(rs)
-    df["d2_score"] = (d2_18wk * 0.65 + d2_52wk * 0.35).clip(0, 100).round(1)
+    d2_18wk   = df["rag_rtt_18wk"].apply(rs)
+    d2_52wk   = df["rag_rtt_52wk"].apply(rs)
+    d2_fds    = df["rag_cancer_fds"].apply(rs)
+    d2_62d    = df["rag_cancer_62d"].apply(rs)
+    df["d2_score"] = (
+        d2_18wk * 0.40 +
+        d2_52wk * 0.20 +
+        d2_fds  * 0.25 +
+        d2_62d  * 0.15
+    ).clip(0, 100).round(1)
 
     # Domain 3: Workforce
     d3_sick    = df["rag_sickness"].apply(rs)
