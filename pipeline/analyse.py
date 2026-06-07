@@ -378,6 +378,11 @@ def apply_rags(df):
     df["rag_vacancy"]    = safe_col(df, "vac_benchmark_rate_all_pct").apply(
         lambda v: rag_threshold(v, "high", 12.0, 8.0))
 
+    # Mental health sickness flag -- % of sickness days due to mental health/stress
+    # National average approximately 28%. Red > 35%, Amber > 30%
+    df["rag_mh_sickness"] = safe_col(df, "s10_mh_pct_3m_avg").apply(
+        lambda v: rag_threshold(v, "high", 0.35, 0.30))
+
     def nursing_rag(trend):
         return {"Deteriorating": "Red", "Stable": "Amber",
                 "Improving": "Green", "Insufficient Data": "Unknown"}.get(trend, "Unknown")
@@ -484,7 +489,8 @@ def domain_scores(df):
     d3_sick    = df["rag_sickness"].apply(rs)
     d3_nursing = df["rag_nursing_trend"].apply(rs)
     d3_vac     = df["rag_vacancy"].apply(rs)
-    df["d3_score"] = (d3_sick * 0.50 + d3_nursing * 0.30 + d3_vac * 0.20
+    d3_mh      = df["rag_mh_sickness"].apply(rs)
+    df["d3_score"] = (d3_sick * 0.40 + d3_nursing * 0.25 + d3_vac * 0.15 + d3_mh * 0.20
                       ).clip(0, 100).round(1)
 
     # Domain 4: Finance and productivity
