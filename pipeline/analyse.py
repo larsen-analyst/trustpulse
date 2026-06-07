@@ -367,6 +367,11 @@ def apply_rags(df):
     df["rag_cancer_62d"] = safe_col(df, "t62d_performance_3m_avg").apply(
         lambda v: rag_threshold(v, "low", 0.70, 0.85))
 
+    # Diagnostics 6+ week wait % -- NHS standard < 1% (99% within 6 weeks)
+    # Red > 15%, Amber > 5% (national average is approximately 18%)
+    df["rag_diagnostics"] = safe_col(df, "diag_pct_waiting_6wk_3m_avg").apply(
+        lambda v: rag_threshold(v, "high", 0.20, 0.10))
+
     # Workforce
     df["rag_sickness"]   = safe_col(df, "sickness_rate_overall_3m_avg").apply(
         lambda v: rag_threshold(v, "high", 7.0, 5.5))
@@ -466,11 +471,13 @@ def domain_scores(df):
     d2_52wk   = df["rag_rtt_52wk"].apply(rs)
     d2_fds    = df["rag_cancer_fds"].apply(rs)
     d2_62d    = df["rag_cancer_62d"].apply(rs)
+    d2_diag   = df["rag_diagnostics"].apply(rs)
     df["d2_score"] = (
-        d2_18wk * 0.40 +
-        d2_52wk * 0.20 +
-        d2_fds  * 0.25 +
-        d2_62d  * 0.15
+        d2_18wk * 0.35 +
+        d2_52wk * 0.15 +
+        d2_fds  * 0.20 +
+        d2_62d  * 0.15 +
+        d2_diag * 0.15
     ).clip(0, 100).round(1)
 
     # Domain 3: Workforce

@@ -31,6 +31,7 @@ OUTPATIENTS_PATH     = DATA_DIR / "outpatients_clean.csv"
 SICKNESS_DETAIL_PATH = DATA_DIR / "sickness_detail_clean.csv"
 SHMI_PATH            = DATA_DIR / "shmi_clean.csv"
 CANCER_WAITING_PATH  = DATA_DIR / "cancer_waiting_clean.csv"
+DIAGNOSTICS_PATH     = DATA_DIR / "diagnostics_clean.csv"
 
 MASTER_OUT   = DATA_DIR / "trust_master.csv"
 PROFILES_OUT = DATA_DIR / "trust_profiles.csv"
@@ -541,6 +542,33 @@ def build_cancer_waiting_metrics():
     return df
 
 
+def build_diagnostics_metrics():
+    """
+    Load diagnostics_clean.csv -- monthly 6-week wait performance per trust.
+    Monthly time series join on org_code and month.
+    NHS standard: 99% of patients seen within 6 weeks (so pct_waiting_6wk < 1%).
+    """
+    if not DIAGNOSTICS_PATH.exists():
+        print("  [WARNING] diagnostics_clean.csv not found -- skipping")
+        return pd.DataFrame()
+    df = pd.read_csv(DIAGNOSTICS_PATH, parse_dates=["period_date"])
+    df["month"] = df["period_date"].dt.to_period("M").dt.to_timestamp()
+    # Rename to avoid collision with existing columns
+    rename = {
+        "total_waiting":    "diag_total_waiting",
+        "waiting_6wk_plus": "diag_waiting_6wk_plus",
+        "waiting_13wk_plus":"diag_waiting_13wk_plus",
+        "pct_waiting_6wk":  "diag_pct_waiting_6wk",
+        "activity_total":   "diag_activity_total",
+    }
+    df = df.rename(columns={k: v for k, v in rename.items() if k in df.columns})
+    keep = ["org_code", "month"] + [v for v in rename.values() if v in df.columns]
+    df = df[[c for c in keep if c in df.columns]].copy()
+    df = df.drop_duplicates(subset=["org_code", "month"], keep="first")
+    print(f"  Diagnostics     : {len(df):,} rows | {df['org_code'].nunique()} orgs")
+    return df
+
+
 def run():
     print("[join] Starting master join...")
 
@@ -566,6 +594,7 @@ def run():
     sickness_detail_metrics = build_sickness_detail_metrics()
     shmi_metrics        = build_shmi_metrics()
     cancer_waiting_metrics = build_cancer_waiting_metrics()
+    diagnostics_metrics    = build_diagnostics_metrics()
 
     # ---------------------------------------------------------------------------
     # Join time series datasets onto spine (left join -- keeps all spine rows)
@@ -643,6 +672,11 @@ def run():
             subset=["org_code", "month"], keep="first")
         master = master.merge(cancer_waiting_metrics, on=["org_code", "month"], how="left")
         print(f"  After cancer waiting join: {master.shape}")
+
+    if not diagnostics_metrics.empty:
+        diagnostics_metrics["month"] = pd.to_datetime(diagnostics_metrics["month"])
+        master = master.merge(diagnostics_metrics, on=["org_code", "month"], how="left")
+        print(f"  After diagnostics join: {master.shape}")
 
     master = master.merge(cqc_metrics,       on="org_code", how="left")
     master = master.merge(oversight_metrics,  on="org_code", how="left")
