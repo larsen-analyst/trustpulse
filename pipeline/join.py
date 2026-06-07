@@ -37,6 +37,7 @@ FFT_PATH             = DATA_DIR / "fft_clean.csv"
 COMPLAINTS_PATH      = DATA_DIR / "complaints_clean.csv"
 ESTATES_PATH         = DATA_DIR / "estates_clean.csv"
 NEVER_EVENTS_PATH    = DATA_DIR / "never_events_clean.csv"
+WLMDS_PATH           = DATA_DIR / "rtt_specialty_clean.csv"
 
 MASTER_OUT   = DATA_DIR / "trust_master.csv"
 PROFILES_OUT = DATA_DIR / "trust_profiles.csv"
@@ -683,6 +684,25 @@ def build_never_events_metrics():
     return df
 
 
+def build_wlmds_metrics():
+    """
+    Load rtt_specialty_clean.csv -- WLMDS provider-level waiting list snapshot.
+    Snapshot join on org_code. Latest position week ending 29 March 2026.
+    Key signals: total waiting, % within 18 weeks, % over 52 weeks, first attendance wait.
+    """
+    if not WLMDS_PATH.exists():
+        print("  [WARNING] rtt_specialty_clean.csv not found -- skipping")
+        return pd.DataFrame()
+    df = pd.read_csv(WLMDS_PATH, dtype={"org_code": str})
+    keep = ["org_code", "wlmds_total_waiting", "wlmds_waiting_u18wks",
+            "wlmds_waiting_over52", "wlmds_pct_within_18wks",
+            "wlmds_pct_over52wks", "wlmds_waiting_first_att", "wlmds_pct_first_att"]
+    keep = [c for c in keep if c in df.columns]
+    df = df[keep].drop_duplicates(subset=["org_code"])
+    print(f"  WLMDS snapshot  : {len(df)} providers | March 2026")
+    return df
+
+
 def run():
     print("[join] Starting master join...")
 
@@ -714,6 +734,7 @@ def run():
     complaints_metrics      = build_complaints_metrics()
     estates_metrics         = build_estates_metrics()
     never_events_metrics    = build_never_events_metrics()
+    wlmds_metrics           = build_wlmds_metrics()
 
     # ---------------------------------------------------------------------------
     # Join time series datasets onto spine (left join -- keeps all spine rows)
@@ -817,6 +838,10 @@ def run():
     if not never_events_metrics.empty:
         master = master.merge(never_events_metrics, on="org_code", how="left")
         print(f"  After never events join: {master.shape}")
+
+    if not wlmds_metrics.empty:
+        master = master.merge(wlmds_metrics, on="org_code", how="left")
+        print(f"  After WLMDS join: {master.shape}")
 
     master = master.merge(cqc_metrics,       on="org_code", how="left")
     master = master.merge(oversight_metrics,  on="org_code", how="left")
