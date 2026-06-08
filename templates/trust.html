@@ -10,253 +10,793 @@
 :root {
   --bg:#0d0f12;--surface:#161a1f;--surface2:#1e2328;--border:#2a2f36;
   --text:#e8eaed;--muted:#7a8694;
-  --red:#ff4d4d;--red-bg:rgba(255,77,77,.1);
-  --amber:#ffb347;--amber-bg:rgba(255,179,71,.1);
-  --green:#3ddc84;--green-bg:rgba(61,220,132,.1);
-  --accent:#4d9fff;--accent-bg:rgba(77,159,255,.1);
+  --red:#ff4d4d;--red-bg:rgba(255,77,77,.08);
+  --amber:#ffb347;--amber-bg:rgba(255,179,71,.08);
+  --green:#3ddc84;--green-bg:rgba(61,220,132,.08);
+  --accent:#4d9fff;--accent-bg:rgba(77,159,255,.08);
   --font-mono:'DM Mono',monospace;--font-sans:'DM Sans',sans-serif;
 }
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:var(--bg);color:var(--text);font-family:var(--font-sans);font-size:14px}
+body{background:var(--bg);color:var(--text);font-family:var(--font-sans);font-size:14px;line-height:1.6}
 nav{background:var(--surface);border-bottom:1px solid var(--border);padding:0 2rem;display:flex;align-items:center;height:52px;gap:2rem;position:sticky;top:0;z-index:100}
 .nav-brand{font-family:var(--font-mono);font-size:13px;color:var(--accent);text-decoration:none}
-.nav-back{color:var(--muted);text-decoration:none;font-size:13px;display:flex;align-items:center;gap:6px}
+.nav-back{color:var(--muted);text-decoration:none;font-size:13px}
 .nav-back:hover{color:var(--text)}
 main{max-width:1200px;margin:0 auto;padding:2rem}
 
-/* Trust header */
-.trust-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:2rem;gap:2rem;flex-wrap:wrap}
-.trust-title h1{font-size:20px;font-weight:500;margin-bottom:6px;line-height:1.3}
+/* Header */
+.trust-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1.5rem;gap:2rem;flex-wrap:wrap}
+.trust-title h1{font-size:22px;font-weight:500;margin-bottom:8px;line-height:1.3}
 .trust-title .meta{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-.trust-code{font-family:var(--font-mono);font-size:12px;color:var(--muted)}
-.region-tag{font-size:12px;padding:2px 8px;background:var(--surface2);border-radius:3px;color:var(--muted)}
+.trust-code{font-family:var(--font-mono);font-size:12px;color:var(--muted);background:var(--surface2);padding:2px 8px;border-radius:3px}
+.tag{font-size:12px;padding:2px 8px;background:var(--surface2);border-radius:3px;color:var(--muted)}
 .trust-score-block{text-align:right;flex-shrink:0}
-.trust-score-big{font-family:var(--font-mono);font-size:52px;font-weight:500;line-height:1}
+.trust-score-big{font-family:var(--font-mono);font-size:56px;font-weight:500;line-height:1}
 .trust-score-label{font-size:11px;color:var(--muted);margin-top:4px}
-.score-red{color:var(--red)}
-.score-amber{color:var(--amber)}
-.score-green{color:var(--green)}
-
-/* RAG */
+.score-red{color:var(--red)}.score-amber{color:var(--amber)}.score-green{color:var(--green)}
 .rag{display:inline-block;padding:3px 10px;border-radius:3px;font-family:var(--font-mono);font-size:12px;font-weight:500}
 .rag-red{background:var(--red-bg);color:var(--red);border:1px solid rgba(255,77,77,.2)}
 .rag-amber{background:var(--amber-bg);color:var(--amber);border:1px solid rgba(255,179,71,.2)}
 .rag-green{background:var(--green-bg);color:var(--green);border:1px solid rgba(61,220,132,.2)}
 .rag-unknown{background:var(--surface2);color:var(--muted);border:1px solid var(--border)}
+.override-notice{background:rgba(255,179,71,.07);border:1px solid rgba(255,179,71,.2);border-radius:6px;padding:10px 14px;font-size:12px;color:var(--amber);margin-bottom:1.5rem}
+.section-hdr{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin:2rem 0 1rem;padding-bottom:6px;border-bottom:1px solid var(--border)}
+.narrative-box{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:8px;padding:1.5rem;margin-bottom:2rem;font-size:14px;line-height:1.8;color:#c8cdd4}
 
 /* Domain grid */
 .domain-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:1rem;margin-bottom:2rem}
-.domain-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1.25rem}
-.domain-card .d-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px}
-.domain-card .d-score{font-family:var(--font-mono);font-size:26px;font-weight:500;margin-bottom:6px}
-.domain-card .d-rag{margin-bottom:6px}
-.domain-card .d-bar{height:3px;background:var(--border);border-radius:2px;overflow:hidden;margin-top:8px}
-.domain-card .d-bar-fill{height:100%;border-radius:2px;transition:width .4s}
+.domain-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1.25rem;cursor:pointer;transition:border-color .2s}
+.domain-card:hover{border-color:var(--accent)}
+.d-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px}
+.d-score{font-family:var(--font-mono);font-size:28px;font-weight:500;margin-bottom:6px}
+.d-bar{height:3px;background:var(--border);border-radius:2px;overflow:hidden;margin-top:8px}
+.d-bar-fill{height:100%;border-radius:2px}
+.d-hint{font-size:10px;color:var(--muted);margin-top:8px;line-height:1.4}
 
-/* Grid 2-col */
-.two-col{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:2rem}
-.card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1.5rem}
-.card-title{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:1.25rem}
+/* Signal flags */
+.flag-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:1.5rem}
+.flag{display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:5px;font-size:11px;border:1px solid;cursor:pointer;transition:opacity .15s}
+.flag:hover{opacity:.8}
+.flag-red{background:var(--red-bg);border-color:rgba(255,77,77,.2);color:var(--red)}
+.flag-amber{background:var(--amber-bg);border-color:rgba(255,179,71,.2);color:var(--amber)}
+.flag-green{background:var(--green-bg);border-color:rgba(61,220,132,.2);color:var(--green)}
+.flag-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.flag-dot-red{background:var(--red)}.flag-dot-amber{background:var(--amber)}.flag-dot-green{background:var(--green)}
 
-/* Metric rows */
-.metric-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)}
-.metric-row:last-child{border-bottom:none}
-.metric-name{font-size:13px;color:var(--muted)}
-.metric-val{font-family:var(--font-mono);font-size:13px;font-weight:500}
+/* Insight panels */
+.insight-panel{background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:1.5rem;overflow:hidden}
+.insight-panel.red{border-left:3px solid var(--red)}
+.insight-panel.amber{border-left:3px solid var(--amber)}
+.insight-panel.green{border-left:3px solid var(--green)}
+.insight-header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;cursor:pointer;user-select:none}
+.insight-header:hover{background:var(--surface2)}
+.insight-title{font-size:14px;font-weight:500}
+.insight-summary{font-size:12px;color:var(--muted);margin-top:3px}
+.insight-toggle{font-size:11px;color:var(--muted);flex-shrink:0;margin-left:1rem}
+.insight-body{display:none;padding:0 18px 18px;border-top:1px solid var(--border)}
+.insight-body.open{display:block}
+.insight-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:14px}
+.insight-stat{background:var(--surface2);border-radius:7px;padding:12px}
+.is-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}
+.is-val{font-family:var(--font-mono);font-size:18px;font-weight:500;margin-bottom:2px}
+.is-sub{font-size:11px;color:var(--muted);line-height:1.4}
+.trend-up{color:var(--red)}.trend-down{color:var(--green)}.trend-flat{color:var(--amber)}
+.insight-what{background:var(--surface2);border-radius:7px;padding:14px;margin-top:12px;font-size:13px;color:#c8cdd4;line-height:1.7}
+.insight-what strong{color:var(--text)}
+.insight-question{background:rgba(77,159,255,.07);border:1px solid rgba(77,159,255,.15);border-radius:7px;padding:12px 14px;margin-top:10px;font-size:12px;color:var(--accent);line-height:1.6}
+.insight-question::before{content:"Director question: ";font-weight:600}
+.peer-bar-wrap{margin-top:12px}
+.peer-bar-label{font-size:11px;color:var(--muted);margin-bottom:5px;display:flex;justify-content:space-between}
+.peer-bar-track{height:8px;background:var(--border);border-radius:4px;position:relative;overflow:visible}
+.peer-bar-fill{height:100%;border-radius:4px;position:absolute;left:0}
+.peer-bar-marker{position:absolute;top:-3px;width:2px;height:14px;background:var(--text);border-radius:1px}
+.peer-bar-labels{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:4px}
+.disclaimer{font-size:10px;color:var(--muted);margin-top:10px;line-height:1.5;padding-top:8px;border-top:1px solid var(--border)}
 
-/* Narrative */
-.narrative-box{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:8px;padding:1.5rem;margin-bottom:2rem;font-size:14px;line-height:1.7;color:#c8cdd4}
+/* Cost block */
+.cost-block{background:var(--accent-bg);border:1px solid rgba(77,159,255,.2);border-radius:8px;padding:1.5rem;margin-bottom:2rem}
+.cost-title{font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px}
+.cost-total{font-family:var(--font-mono);font-size:36px;font-weight:500;color:var(--accent);margin-bottom:4px}
+.cost-context{font-size:13px;color:#c8cdd4;margin-bottom:8px;line-height:1.5}
+.cost-breakdown{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-top:1rem}
+.cost-item{background:rgba(255,255,255,.03);border-radius:6px;padding:10px}
+.ci-label{font-size:11px;color:var(--muted);margin-bottom:3px}
+.ci-val{font-family:var(--font-mono);font-size:15px;color:var(--accent);margin-bottom:2px}
+.ci-trend{font-size:10px}
+.ci-formula{font-size:10px;color:var(--muted)}
+.cost-note{font-size:11px;color:var(--muted);line-height:1.5;margin-top:12px;padding-top:10px;border-top:1px solid rgba(77,159,255,.15)}
 
 /* Charts */
-.chart-wrap{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1.5rem;margin-bottom:1.5rem}
-.chart-title{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:1rem}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:1.5rem}
+.chart-wrap{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1.5rem}
+.chart-title{font-size:13px;font-weight:500;margin-bottom:3px}
+.chart-subtitle{font-size:11px;color:var(--muted);margin-bottom:1rem;line-height:1.5}
 .chart-area{height:200px}
 
-/* Override */
-.override-notice{background:rgba(255,179,71,.07);border:1px solid rgba(255,179,71,.2);border-radius:6px;padding:10px 14px;font-size:12px;color:var(--amber);margin-bottom:1.5rem}
+/* SHMI */
+.shmi-block{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1.5rem;margin-bottom:1.5rem}
+.shmi-higher{border-left:3px solid var(--red)}.shmi-expected{border-left:3px solid var(--amber)}.shmi-lower{border-left:3px solid var(--green)}.shmi-unknown{border-left:3px solid var(--border)}
+.shmi-top{display:flex;align-items:flex-start;justify-content:space-between;gap:2rem;flex-wrap:wrap;margin-bottom:1rem}
+.shmi-val-big{font-family:var(--font-mono);font-size:48px;font-weight:500;line-height:1}
+.shmi-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-top:1rem}
+.shmi-stat{background:var(--surface2);border-radius:6px;padding:10px}
+.shmi-stat-val{font-family:var(--font-mono);font-size:18px;font-weight:500;margin-bottom:2px}
+.shmi-stat-label{font-size:11px;color:var(--muted)}
+.shmi-disclaimer{font-size:11px;color:var(--muted);margin-top:1rem;padding-top:10px;border-top:1px solid var(--border);line-height:1.5}
 
-/* Full metrics table */
-.metrics-table{width:100%;border-collapse:collapse;font-size:13px}
-.metrics-table th{padding:8px 12px;text-align:left;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--border)}
-.metrics-table td{padding:8px 12px;border-bottom:1px solid var(--border)}
-.metrics-table tr:last-child td{border-bottom:none}
-.metrics-table tr:hover td{background:var(--surface2)}
-
-/* Cost estimate */
-.cost-block{background:var(--accent-bg);border:1px solid rgba(77,159,255,.2);border-radius:8px;padding:1.5rem;margin-bottom:2rem}
-.cost-block .cost-title{font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:.08em;margin-bottom:1rem}
-.cost-total{font-family:var(--font-mono);font-size:32px;font-weight:500;color:var(--accent);margin-bottom:4px}
-.cost-note{font-size:11px;color:var(--muted);line-height:1.5}
-.cost-breakdown{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-top:1rem}
-.cost-item .ci-label{font-size:11px;color:var(--muted);margin-bottom:3px}
-.cost-item .ci-val{font-family:var(--font-mono);font-size:16px;color:var(--accent)}
+/* Staff group bars */
+.sg-row{display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--border)}
+.sg-row:last-child{border-bottom:none}
+.sg-label{font-size:12px;color:var(--muted);width:150px;flex-shrink:0}
+.sg-bar-wrap{flex:1;height:8px;background:var(--border);border-radius:4px;overflow:hidden}
+.sg-bar-fill{height:100%;border-radius:4px}
+.sg-val{font-family:var(--font-mono);font-size:12px;width:55px;text-align:right;flex-shrink:0}
+.sg-trend{font-size:10px;width:65px;text-align:right;flex-shrink:0}
+.mh-flag{background:rgba(255,77,77,.07);border:1px solid rgba(255,77,77,.2);border-radius:6px;padding:10px 14px;font-size:12px;color:var(--red);margin-top:1rem;line-height:1.5}
+.mh-ok{background:rgba(61,220,132,.07);border:1px solid rgba(61,220,132,.2);border-radius:6px;padding:10px 14px;font-size:12px;color:var(--green);margin-top:1rem;line-height:1.5}
 </style>
 </head>
 <body>
-
 <nav>
   <a class="nav-brand" href="/">TRUSTPULSE</a>
-  <a class="nav-back" href="/">← All Trusts</a>
-  <a href="/compare?org={{ org_code }}" style="margin-left:auto;color:var(--muted);text-decoration:none;font-size:13px">Compare this trust →</a>
+  <a class="nav-back" href="/">&#8592; All Trusts</a>
+  <a href="/compare?org={{ org_code }}" style="margin-left:auto;color:var(--muted);text-decoration:none;font-size:13px">Compare this trust &#8594;</a>
 </nav>
-
 <main>
 
 {% set rag = trust.overall_rag or "Unknown" %}
-{% set score_class = "score-red" if rag == "Red" else ("score-amber" if rag == "Amber" else "score-green") %}
+{% set sc = "score-red" if rag=="Red" else ("score-amber" if rag=="Amber" else "score-green") %}
+{% set t = trust %}
 
-{% if trust.financial_override_applied %}
-<div class="override-notice">⚠ Financial override applied — composite score floored at 50 due to trust being in financial deficit.</div>
+{% if t.get('financial_override_applied') %}
+<div class="override-notice">&#9888; Financial override applied — this trust is in financial deficit. The composite risk score has been floored at 50. A trust in deficit cannot score below the midpoint regardless of other indicators.</div>
 {% endif %}
 
+<!-- Header -->
 <div class="trust-header">
   <div class="trust-title">
-    <h1>{{ trust.org_name or trust.org_code }}</h1>
+    <h1>{{ t.org_name or t.org_code }}</h1>
     <div class="meta">
-      <span class="trust-code">{{ trust.org_code }}</span>
-      {% if trust.Region %}<span class="region-tag">{{ trust.Region }}</span>{% endif %}
-      {% if trust.Trust_type %}<span class="region-tag">{{ trust.Trust_type }}</span>{% endif %}
+      <span class="trust-code">{{ t.org_code }}</span>
+      {% if t.Region %}<span class="tag">{{ t.Region }}</span>{% endif %}
+      {% if t.Trust_type %}<span class="tag">{{ t.Trust_type }}</span>{% endif %}
       <span class="rag rag-{{ rag|lower }}">{{ rag }}</span>
+      {% if t.get('red_flag_count') %}<span class="tag" style="color:var(--red)">{{ t.red_flag_count }} red flags</span>{% endif %}
     </div>
   </div>
   <div class="trust-score-block">
-    <div class="trust-score-big {{ score_class }}">{{ trust.composite_score|fmt_score }}</div>
+    <div class="trust-score-big {{ sc }}">{{ t.composite_score|fmt_score }}</div>
     <div class="trust-score-label">Composite risk score (0–100)</div>
+    {% if t.get('composite_score_national_pct') %}<div style="font-size:11px;color:var(--muted);margin-top:3px">Top {{ "%.0f"|format((100 - t.composite_score_national_pct|float)) }}% nationally (higher risk)</div>{% endif %}
   </div>
 </div>
 
-<!-- Narrative -->
-{% if trust.narrative %}
-<div class="narrative-box">{{ trust.narrative }}</div>
+<!-- Signal flags -->
+<div class="flag-row">
+{% set flags = [
+  ("A&E 4hr","rag_4hr_type1"),("12hr breaches","rag_12hr"),("Ambulance handover","rag_amb_60min"),
+  ("RTT 18-week","rag_rtt_18wk"),("52-week waiters","rag_rtt_52wk"),("Sickness","rag_sickness"),
+  ("Vacancies","rag_vacancy"),("Nursing trend","rag_nursing_trend"),("Oversight segment","rag_oversight_segment"),
+  ("Finance variance","rag_finance_variance"),("Productivity","rag_productivity"),("CQC rating","rag_cqc_overall"),
+  ("Bed occupancy","rag_beds_occupancy"),("Delayed discharge","rag_delayed_discharge"),
+  ("Cancelled ops","rag_cancelled_ops"),("C.diff","rag_cdiff"),("DNA rate","rag_dna_rate"),("SHMI","rag_shmi"),
+] %}
+{% for name, field in flags %}
+{% set r = t.get(field) %}
+{% if r and r != "Unknown" %}
+<span class="flag flag-{{ r|lower }}" onclick="scrollToPanel('panel-{{ field }}')">
+  <span class="flag-dot flag-dot-{{ r|lower }}"></span>{{ name }}
+</span>
+{% endif %}
+{% endfor %}
+</div>
+
+{% if t.narrative %}
+<div class="narrative-box">{{ t.narrative }}</div>
 {% endif %}
 
 <!-- Domain scores -->
+<div class="section-hdr">Five domain scores</div>
 <div class="domain-grid">
-  {% set domains = [
-    ("D1", "Urgent &amp; Emergency", trust.d1_score, trust.d1_rag),
-    ("D2", "Elective Care", trust.d2_score, trust.d2_rag),
-    ("D3", "Workforce", trust.d3_score, trust.d3_rag),
-    ("D4", "Finance &amp; Productivity", trust.d4_score, trust.d4_rag),
-    ("D5", "Quality &amp; Safety", trust.d5_score, trust.d5_rag),
-  ] %}
-  {% for d_id, d_name, d_score, d_rag in domains %}
-  {% set d_rag_safe = d_rag or "Unknown" %}
-  {% set bar_col = "var(--red)" if d_rag_safe == "Red" else ("var(--amber)" if d_rag_safe == "Amber" else "var(--green)") %}
-  <div class="domain-card">
-    <div class="d-label">{{ d_id }} · {{ d_name }}</div>
-    <div class="d-score" style="color:{{ bar_col }}">{{ d_score|fmt_score if d_score else "N/A" }}</div>
-    <div class="d-rag"><span class="rag rag-{{ d_rag_safe|lower }}">{{ d_rag_safe }}</span></div>
-    <div class="d-bar"><div class="d-bar-fill" style="width:{{ (d_score or 0)|int }}%;background:{{ bar_col }}"></div></div>
-  </div>
-  {% endfor %}
+{% set domains = [
+  ("D1","Urgent & Emergency",t.get('d1_score'),t.get('d1_rag'),"A&E 4hr, 12hr breaches, ambulance handover delays"),
+  ("D2","Elective Care",t.get('d2_score'),t.get('d2_rag'),"RTT 18-week performance, 52-week long waiters"),
+  ("D3","Workforce",t.get('d3_score'),t.get('d3_rag'),"Sickness rate, nursing FTE trend, vacancy benchmarks"),
+  ("D4","Finance & Productivity",t.get('d4_score'),t.get('d4_rag'),"Oversight segment, finance variance, productivity growth"),
+  ("D5","Quality & Safety",t.get('d5_score'),t.get('d5_rag'),"CQC, beds, discharge, cancelled ops, DNA rate, SHMI"),
+] %}
+{% for did, dname, dscore, drag, dhint in domains %}
+{% set dr = drag or "Unknown" %}
+{% set bc = "var(--red)" if dr=="Red" else ("var(--amber)" if dr=="Amber" else "var(--green)") %}
+<div class="domain-card">
+  <div class="d-label">{{ did }} · {{ dname }}</div>
+  <div class="d-score" style="color:{{ bc }}">{{ dscore|fmt_score if dscore else "N/A" }}</div>
+  <span class="rag rag-{{ dr|lower }}">{{ dr }}</span>
+  <div class="d-bar"><div class="d-bar-fill" style="width:{{ (dscore or 0)|int }}%;background:{{ bc }}"></div></div>
+  <div class="d-hint">{{ dhint }}</div>
+</div>
+{% endfor %}
 </div>
 
-<!-- Cost estimate -->
-{% if trust.est_annual_inefficiency_gbp %}
-<div class="cost-block">
-  <div class="cost-title">Estimated Annual Operational Inefficiency Cost</div>
-  <div class="cost-total">{{ trust.est_annual_inefficiency_gbp|fmt_cost }}</div>
-  <div class="cost-note">
-    Calculated using NHS England published unit rates: delayed discharge £345/day · sickness absence £200/FTE day · cancelled operations £3,000/op.
-    These are estimates based on public data. Internal trust data may differ. See methodology for full assumptions.
+<!-- ===================== INSIGHT PANELS ===================== -->
+<div class="section-hdr">Signal analysis — click any panel to expand</div>
+
+{# Macro: trend arrow and colour #}
+{% macro trend_html(now, prev, direction="high_bad", pct=true) %}
+{% if now and prev %}
+  {% set n = now|float %}
+  {% set p = prev|float %}
+  {% if p > 0 %}
+    {% set chg = ((n - p) / p * 100)|round(1) %}
+    {% if direction == "high_bad" %}
+      {% if chg > 3 %}<span class="trend-up">&#8593; {{ chg }}% worse</span>
+      {% elif chg < -3 %}<span class="trend-down">&#8595; {{ chg|abs }}% better</span>
+      {% else %}<span class="trend-flat">&#8596; stable</span>{% endif %}
+    {% else %}
+      {% if chg < -3 %}<span class="trend-up">&#8595; {{ chg|abs }}% worse</span>
+      {% elif chg > 3 %}<span class="trend-down">&#8593; {{ chg }}% better</span>
+      {% else %}<span class="trend-flat">&#8596; stable</span>{% endif %}
+    {% endif %}
+  {% endif %}
+{% endif %}
+{% endmacro %}
+
+{# Macro: percentile bar #}
+{% macro pct_bar(national_pct, regional_pct, label, direction="high_bad") %}
+{% if national_pct %}
+<div class="peer-bar-wrap">
+  <div class="peer-bar-label"><span>National position</span><span>{{ "%.0f"|format(national_pct|float) }}th percentile</span></div>
+  <div class="peer-bar-track" style="height:8px;background:var(--border);border-radius:4px;position:relative">
+    <div style="position:absolute;left:0;top:0;height:100%;width:{{ (national_pct|float)|int }}%;background:{% if direction=='high_bad' %}{% if national_pct|float > 0.75 %}var(--red){% elif national_pct|float > 0.5 %}var(--amber){% else %}var(--green){% endif %}{% else %}{% if national_pct|float < 0.25 %}var(--red){% elif national_pct|float < 0.5 %}var(--amber){% else %}var(--green){% endif %}{% endif %};border-radius:4px"></div>
   </div>
-  <div class="cost-breakdown">
-    <div class="cost-item">
-      <div class="ci-label">Delayed Discharge</div>
-      <div class="ci-val">{{ trust.est_annual_delayed_discharge_gbp|fmt_cost if trust.est_annual_delayed_discharge_gbp else "N/A" }}</div>
+  <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:3px"><span>Best</span><span>Median</span><span>Worst</span></div>
+</div>
+{% endif %}
+{% endmacro %}
+
+{# PANEL 1: A&E 4hr performance #}
+{% set r1 = t.get('rag_4hr_type1') %}
+{% if r1 and r1 != "Unknown" %}
+<div class="insight-panel {{ r1|lower }}" id="panel-rag_4hr_type1">
+  <div class="insight-header" onclick="togglePanel(this)">
+    <div>
+      <div class="insight-title">A&E Type 1 Four-Hour Performance <span class="rag rag-{{ r1|lower }}" style="font-size:11px;margin-left:8px">{{ r1 }}</span></div>
+      <div class="insight-summary">
+        {% set v = t.get('ae_type1_4hr_performance') %}
+        {% if v %}{{ "%.1f"|format(v|float * 100) }}% of Type 1 patients seen within 4 hours (3-month average). NHS standard is 76%.{% endif %}
+      </div>
     </div>
-    <div class="cost-item">
-      <div class="ci-label">Sickness Absence</div>
-      <div class="ci-val">{{ trust.est_annual_sickness_gbp|fmt_cost if trust.est_annual_sickness_gbp else "N/A" }}</div>
+    <span class="insight-toggle">&#9660; expand</span>
+  </div>
+  <div class="insight-body">
+    <div class="insight-grid">
+      <div class="insight-stat">
+        <div class="is-label">Latest month</div>
+        <div class="is-val {% if r1=='Red' %}trend-up{% elif r1=='Green' %}trend-down{% else %}trend-flat{% endif %}">
+          {% if t.get('ae_type1_4hr_performance') %}{{ "%.1f"|format(t.ae_type1_4hr_performance|float * 100) }}%{% else %}N/A{% endif %}
+        </div>
+        <div class="is-sub">NHS standard: 76%. Ambition: 95%.</div>
+      </div>
+      <div class="insight-stat">
+        <div class="is-label">3-month average</div>
+        <div class="is-val">{% if t.get('ae_type1_4hr_performance') %}{{ "%.1f"|format(t.ae_type1_4hr_performance|float * 100) }}%{% else %}N/A{% endif %}</div>
+        <div class="is-sub">{{ trend_html(t.get('ae_type1_4hr_performance'), t.get('ae_type1_4hr_performance_prior_3m_avg'), 'low_bad') }}</div>
+      </div>
+      <div class="insight-stat">
+        <div class="is-label">National percentile</div>
+        <div class="is-val">{% if t.get('ae_type1_4hr_performance_national_pct') %}{{ "%.0f"|format(t.ae_type1_4hr_performance_national_pct|float) }}th{% else %}N/A{% endif %}</div>
+        <div class="is-sub">{% if t.get('ae_type1_4hr_performance_regional_pct') %}Regional: {{ "%.0f"|format(t.ae_type1_4hr_performance_regional_pct|float) }}th percentile{% endif %}</div>
+      </div>
     </div>
-    <div class="cost-item">
-      <div class="ci-label">Cancelled Operations</div>
-      <div class="ci-val">{{ trust.est_annual_cancelled_ops_gbp|fmt_cost if trust.est_annual_cancelled_ops_gbp else "N/A" }}</div>
+    {{ pct_bar(t.get('ae_type1_4hr_performance_national_pct'), t.get('ae_type1_4hr_performance_regional_pct'), 'A&E 4hr', 'low_bad') }}
+    <div class="insight-what">
+      <strong>What this means:</strong> Type 1 A&E departments are the most acute — major emergency departments treating the most seriously ill patients.
+      Performance below 76% means more than 1 in 4 patients is waiting longer than 4 hours. This is directly linked to bed occupancy above 85%, delayed discharge blocking beds, and insufficient same-day discharge.
+      Sustained underperformance triggers NHS England segmentation review and active improvement support.
+      {% set col12hr = 'ae_patients_who_have_waited_12+_hrs_from_dta_to_admission_3m_avg' %}
+      {% if t.get(col12hr) %}
+      This trust has an average of <strong>{{ "{:,.0f}".format(t.get(col12hr)|float) }}</strong> patients waiting over 12 hours from decision to admit to admission per month — a direct indicator of hospital-wide capacity failure.
+      {% endif %}
     </div>
+    <div class="insight-question">What is the primary driver of 4-hour breaches — insufficient beds, discharge delays, or staffing levels in the department itself?</div>
   </div>
 </div>
 {% endif %}
 
-<!-- Charts row -->
+{# PANEL 2: Sickness #}
+{% set r2 = t.get('rag_sickness') %}
+{% if r2 and r2 != "Unknown" %}
+<div class="insight-panel {{ r2|lower }}" id="panel-rag_sickness">
+  <div class="insight-header" onclick="togglePanel(this)">
+    <div>
+      <div class="insight-title">Staff Sickness Absence Rate <span class="rag rag-{{ r2|lower }}" style="font-size:11px;margin-left:8px">{{ r2 }}</span></div>
+      <div class="insight-summary">
+        {% set v = t.get('sickness_rate_overall_3m_avg') %}
+        {% if v %}{{ "%.1f"|format(v|float) }}% overall sickness rate (3-month average). National average is approximately 5.5%.{% endif %}
+      </div>
+    </div>
+    <span class="insight-toggle">&#9660; expand</span>
+  </div>
+  <div class="insight-body">
+    <div class="insight-grid">
+      <div class="insight-stat">
+        <div class="is-label">Overall rate (3m avg)</div>
+        <div class="is-val {% if r2=='Red' %}trend-up{% endif %}">{% if t.get('sickness_rate_overall_3m_avg') %}{{ "%.1f"|format(t.sickness_rate_overall_3m_avg|float) }}%{% else %}N/A{% endif %}</div>
+        <div class="is-sub">{{ trend_html(t.get('sickness_rate_overall_3m_avg'), t.get('sickness_rate_overall_prior_3m_avg'), 'high_bad') }} vs prior 3 months</div>
+      </div>
+      <div class="insight-stat">
+        <div class="is-label">Nursing sickness rate</div>
+        <div class="is-val">{% if t.get('sick_sickness_rate_nursing_3m_avg') %}{{ "%.1f"|format(t.sick_sickness_rate_nursing_3m_avg|float * 100) }}%{% else %}N/A{% endif %}</div>
+        <div class="is-sub">{{ trend_html(t.get('sick_sickness_rate_nursing_3m_avg'), t.get('sick_sickness_rate_nursing_prior_3m_avg'), 'high_bad') }}</div>
+      </div>
+      <div class="insight-stat">
+        <div class="is-label">Medical sickness rate</div>
+        <div class="is-val">{% if t.get('sick_sickness_rate_medical_3m_avg') %}{{ "%.1f"|format(t.sick_sickness_rate_medical_3m_avg|float * 100) }}%{% else %}N/A{% endif %}</div>
+        <div class="is-sub">{{ trend_html(t.get('sick_sickness_rate_medical_3m_avg'), t.get('sick_sickness_rate_medical_prior_3m_avg'), 'high_bad') }}</div>
+      </div>
+    </div>
+    <div class="insight-grid" style="margin-top:10px">
+      <div class="insight-stat">
+        <div class="is-label">Mental health % of absences</div>
+        <div class="is-val {% if t.get('s10_mh_pct_3m_avg') and t.s10_mh_pct_3m_avg|float > 0.30 %}trend-up{% endif %}">
+          {% if t.get('s10_mh_pct_3m_avg') %}{{ "%.1f"|format(t.s10_mh_pct_3m_avg|float * 100) }}%{% else %}N/A{% endif %}
+        </div>
+        <div class="is-sub">National average approx 28%. Above 30% = elevated risk.</div>
+      </div>
+      <div class="insight-stat">
+        <div class="is-label">FTE days lost (monthly avg)</div>
+        <div class="is-val">{% if t.get('sickness_fte_days_lost_3m_avg') %}{{ "{:,.0f}".format(t.sickness_fte_days_lost_3m_avg|float) }}{% else %}N/A{% endif %}</div>
+        <div class="is-sub">FTE days unavailable per month due to sickness</div>
+      </div>
+      <div class="insight-stat">
+        <div class="is-label">Estimated annual cost</div>
+        <div class="is-val" style="color:var(--accent)">{% if t.get('est_annual_sickness_gbp') %}{{ t.est_annual_sickness_gbp|fmt_cost }}{% else %}N/A{% endif %}</div>
+        <div class="is-sub">FTE days lost x £200/day (NHS England rate)</div>
+      </div>
+    </div>
+    {{ pct_bar(t.get('sickness_rate_overall_3m_avg_national_pct'), t.get('sickness_rate_overall_3m_avg_regional_pct'), 'Sickness', 'high_bad') }}
+    <div class="insight-what">
+      <strong>What this means:</strong> Sickness absence is one of the strongest leading indicators of A&E performance deterioration, typically with a 2–3 month lag.
+      When nursing sickness rises, trusts rely on bank and agency staff who are less familiar with ward processes, leading to longer patient stays, slower discharge, and rising bed occupancy.
+      {% if t.get('s10_mh_pct_3m_avg') and t.s10_mh_pct_3m_avg|float > 0.30 %}
+      <strong>Mental health and stress accounts for {{ "%.1f"|format(t.s10_mh_pct_3m_avg|float * 100) }}% of absences at this trust</strong> — above the national average of 28%. This is a significant indicator of staff burnout, often driven by sustained operational pressure, understaffing, or management culture.
+      {% endif %}
+    </div>
+    <div class="insight-question">What proportion of sickness absence is short-term (under 4 weeks) versus long-term, and what return-to-work support is in place for mental health-related absences?</div>
+  </div>
+</div>
+{% endif %}
+
+{# PANEL 3: Finance #}
+{% set r3 = t.get('rag_finance_variance') %}
+{% if r3 and r3 != "Unknown" %}
+<div class="insight-panel {{ r3|lower }}" id="panel-rag_finance_variance">
+  <div class="insight-header" onclick="togglePanel(this)">
+    <div>
+      <div class="insight-title">Financial Position <span class="rag rag-{{ r3|lower }}" style="font-size:11px;margin-left:8px">{{ r3 }}</span></div>
+      <div class="insight-summary">
+        {% if t.get('fin_in_deficit') and t.fin_in_deficit|float == 1 %}Trust is in financial deficit as of Q3 2025/26.
+        {% elif t.get('fin_var_pct_turnover') %}Finance variance: {{ "%.1f"|format(t.fin_var_pct_turnover|float) }}% of turnover.{% endif %}
+      </div>
+    </div>
+    <span class="insight-toggle">&#9660; expand</span>
+  </div>
+  <div class="insight-body">
+    <div class="insight-grid">
+      <div class="insight-stat">
+        <div class="is-label">In financial deficit</div>
+        <div class="is-val {% if t.get('fin_in_deficit') and t.fin_in_deficit|float == 1 %}trend-up{% else %}trend-down{% endif %}">
+          {% if t.get('fin_in_deficit') %}{% if t.fin_in_deficit|float == 1 %}Yes{% else %}No{% endif %}{% else %}N/A{% endif %}
+        </div>
+        <div class="is-sub">Q3 2025/26 financial position</div>
+      </div>
+      <div class="insight-stat">
+        <div class="is-label">YTD variance (£m)</div>
+        <div class="is-val {% if t.get('fin_ytd_var_m') and t.fin_ytd_var_m|float < 0 %}trend-up{% endif %}">
+          {% if t.get('fin_ytd_var_m') %}£{{ "%.1f"|format(t.fin_ytd_var_m|float) }}m{% else %}N/A{% endif %}
+        </div>
+        <div class="is-sub">Year-to-date actual vs plan. Negative = overspend.</div>
+      </div>
+      <div class="insight-stat">
+        <div class="is-label">Variance (% of turnover)</div>
+        <div class="is-val {% if t.get('fin_var_pct_turnover') and t.fin_var_pct_turnover|float < -2 %}trend-up{% endif %}">
+          {% if t.get('fin_var_pct_turnover') %}{{ "%.1f"|format(t.fin_var_pct_turnover|float) }}%{% else %}N/A{% endif %}
+        </div>
+        <div class="is-sub">Above -5% = Red. Above -2% = Amber.</div>
+      </div>
+    </div>
+    <div class="insight-grid" style="margin-top:10px">
+      <div class="insight-stat">
+        <div class="is-label">YTD plan (£m)</div>
+        <div class="is-val">{% if t.get('fin_ytd_plan_inc_dsf_m') %}£{{ "%.1f"|format(t.fin_ytd_plan_inc_dsf_m|float) }}m{% else %}N/A{% endif %}</div>
+        <div class="is-sub">Planned income and expenditure to date</div>
+      </div>
+      <div class="insight-stat">
+        <div class="is-label">YTD actual (£m)</div>
+        <div class="is-val">{% if t.get('fin_ytd_actual_inc_dsf_m') %}£{{ "%.1f"|format(t.fin_ytd_actual_inc_dsf_m|float) }}m{% else %}N/A{% endif %}</div>
+        <div class="is-sub">Actual income and expenditure to date</div>
+      </div>
+      <div class="insight-stat">
+        <div class="is-label">Full year forecast (£m)</div>
+        <div class="is-val">{% if t.get('fin_forecast_outturn_exc_dsf_m') %}£{{ "%.1f"|format(t.fin_forecast_outturn_exc_dsf_m|float) }}m{% else %}N/A{% endif %}</div>
+        <div class="is-sub">Forecast full-year outturn excluding DSF</div>
+      </div>
+    </div>
+    <div class="insight-what">
+      <strong>What this means:</strong> A trust in financial deficit has committed more expenditure than its income allows. This typically leads to cost-cutting measures that — if poorly targeted — can become false economies.
+      Cutting agency spend when sickness is high forces reliance on more expensive last-minute bank staff. Reducing non-clinical posts when length of stay is already above average worsens discharge coordination and increases bed costs.
+      The NHS Oversight Framework places trusts in deficit under active financial oversight (segment 3 or 4), which constrains management flexibility.
+      {% if t.get('fin_ics_name') %} This trust sits within <strong>{{ t.fin_ics_name }}</strong> ICS.{% endif %}
+    </div>
+    <div class="insight-question">What is the single largest driver of the variance — workforce costs, drugs and supplies, or income shortfall from activity below plan?</div>
+  </div>
+</div>
+{% endif %}
+
+{# PANEL 4: Bed occupancy #}
+{% set r4 = t.get('rag_beds_occupancy') %}
+{% if r4 and r4 != "Unknown" %}
+<div class="insight-panel {{ r4|lower }}" id="panel-rag_beds_occupancy">
+  <div class="insight-header" onclick="togglePanel(this)">
+    <div>
+      <div class="insight-title">Bed Occupancy Rate <span class="rag rag-{{ r4|lower }}" style="font-size:11px;margin-left:8px">{{ r4 }}</span></div>
+      <div class="insight-summary">
+        {% set v = t.get('beds_occupancy_rate_3m_avg') %}
+        {% if v %}{{ "%.1f"|format(v|float * 100) }}% average G&A bed occupancy (3-month average). RCEM ceiling is 85%.{% endif %}
+      </div>
+    </div>
+    <span class="insight-toggle">&#9660; expand</span>
+  </div>
+  <div class="insight-body">
+    <div class="insight-grid">
+      <div class="insight-stat">
+        <div class="is-label">Occupancy (3m avg)</div>
+        <div class="is-val {% if r4=='Red' %}trend-up{% endif %}">{% if t.get('beds_occupancy_rate_3m_avg') %}{{ "%.1f"|format(t.beds_occupancy_rate_3m_avg|float * 100) }}%{% else %}N/A{% endif %}</div>
+        <div class="is-sub">{{ trend_html(t.get('beds_occupancy_rate_3m_avg'), t.get('beds_occupancy_rate_prior_3m_avg'), 'high_bad') }}</div>
+      </div>
+      <div class="insight-stat">
+        <div class="is-label">G&A beds available (avg)</div>
+        <div class="is-val">{% if t.get('beds_ganda_available_3m_avg') %}{{ "{:,.0f}".format(t.beds_ganda_available_3m_avg|float) }}{% else %}N/A{% endif %}</div>
+        <div class="is-sub">{{ trend_html(t.get('beds_ganda_available_3m_avg'), t.get('beds_ganda_available_prior_3m_avg'), 'low_bad') }}</div>
+      </div>
+      <div class="insight-stat">
+        <div class="is-label">Delayed discharge (monthly avg)</div>
+        <div class="is-val {% if t.get('rag_delayed_discharge') == 'Red' %}trend-up{% endif %}">
+          {% if t.get('discharge_total_delayed_bed_days_3m_avg') %}{{ "{:,.0f}".format(t.discharge_total_delayed_bed_days_3m_avg|float) }}{% else %}N/A{% endif %}
+        </div>
+        <div class="is-sub">Bed days lost monthly to delayed discharge</div>
+      </div>
+    </div>
+    {{ pct_bar(t.get('beds_occupancy_rate_3m_avg_national_pct'), t.get('beds_occupancy_rate_3m_avg_regional_pct'), 'Occupancy', 'high_bad') }}
+    <div class="insight-what">
+      <strong>What this means:</strong> The Royal College of Emergency Medicine recommends a maximum of 85% G&A bed occupancy to maintain safe surge capacity and infection control.
+      Above 95% is considered crisis level — at this point, hospitals routinely open escalation areas, staff are spread thin, infection risk rises, and A&E patients face multi-hour waits for a bed.
+      High occupancy is almost always connected to delayed discharge: patients who are medically ready to leave but cannot be discharged because of inadequate social care, housing, or community support.
+      Each delayed bed day costs approximately £345 and blocks one admission.
+    </div>
+    <div class="insight-question">What percentage of delayed bed days are caused by NHS factors (e.g. awaiting further treatment) versus social care factors (e.g. awaiting care package), and which is growing faster?</div>
+  </div>
+</div>
+{% endif %}
+
+{# PANEL 5: RTT 18-week #}
+{% set r5 = t.get('rag_rtt_18wk') %}
+{% if r5 and r5 != "Unknown" %}
+<div class="insight-panel {{ r5|lower }}" id="panel-rag_rtt_18wk">
+  <div class="insight-header" onclick="togglePanel(this)">
+    <div>
+      <div class="insight-title">RTT 18-Week Elective Waiting Performance <span class="rag rag-{{ r5|lower }}" style="font-size:11px;margin-left:8px">{{ r5 }}</span></div>
+      <div class="insight-summary">
+        {% set v = t.get('pct_within_18_weeks_3m_avg') %}
+        {% if v %}{{ "%.1f"|format(v|float * 100) }}% of pathways within 18 weeks (3-month average). Operational standard is 65%.{% endif %}
+      </div>
+    </div>
+    <span class="insight-toggle">&#9660; expand</span>
+  </div>
+  <div class="insight-body">
+    <div class="insight-grid">
+      <div class="insight-stat">
+        <div class="is-label">18-week performance (3m avg)</div>
+        <div class="is-val">{% if t.get('pct_within_18_weeks_3m_avg') %}{{ "%.1f"|format(t.pct_within_18_weeks_3m_avg|float * 100) }}%{% else %}N/A{% endif %}</div>
+        <div class="is-sub">{{ trend_html(t.get('pct_within_18_weeks_3m_avg'), t.get('pct_within_18_weeks_prior_3m_avg'), 'low_bad') }}</div>
+      </div>
+      <div class="insight-stat">
+        <div class="is-label">52-week waiters (monthly avg)</div>
+        <div class="is-val {% if t.get('rag_rtt_52wk') == 'Red' %}trend-up{% endif %}">{% if t.get('waiting_over_52_weeks_3m_avg') %}{{ "{:,.0f}".format(t.waiting_over_52_weeks_3m_avg|float) }}{% else %}N/A{% endif %}</div>
+        <div class="is-sub">{{ trend_html(t.get('waiting_over_52_weeks_3m_avg'), t.get('waiting_over_52_weeks_prior_3m_avg'), 'high_bad') }}</div>
+      </div>
+      <div class="insight-stat">
+        <div class="is-label">Total incomplete pathways</div>
+        <div class="is-val">{% if t.get('total_waiting_3m_avg') %}{{ "{:,.0f}".format(t.total_waiting_3m_avg|float) }}{% else %}N/A{% endif %}</div>
+        <div class="is-sub">Total waiting list size (monthly average)</div>
+      </div>
+    </div>
+    <div class="insight-grid" style="margin-top:10px">
+      <div class="insight-stat">
+        <div class="is-label">104-week waiters</div>
+        <div class="is-val {% if t.get('waiting_over_104_weeks_3m_avg') and t.waiting_over_104_weeks_3m_avg|float > 0 %}trend-up{% endif %}">{% if t.get('waiting_over_104_weeks_3m_avg') %}{{ "{:,.0f}".format(t.waiting_over_104_weeks_3m_avg|float) }}{% else %}N/A{% endif %}</div>
+        <div class="is-sub">Should be zero under elective recovery plan</div>
+      </div>
+      <div class="insight-stat">
+        <div class="is-label">Median wait (weeks est.)</div>
+        <div class="is-val">{% if t.get('median_wait_weeks_est_3m_avg') %}{{ "%.1f"|format(t.median_wait_weeks_est_3m_avg|float) }}w{% else %}N/A{% endif %}</div>
+        <div class="is-sub">Estimated median wait for incomplete pathways</div>
+      </div>
+      <div class="insight-stat">
+        <div class="is-label">National percentile</div>
+        <div class="is-val">{% if t.get('pct_within_18_weeks_3m_avg_national_pct') %}{{ "%.0f"|format(t.pct_within_18_weeks_3m_avg_national_pct|float) }}th{% else %}N/A{% endif %}</div>
+        <div class="is-sub">{% if t.get('pct_within_18_weeks_3m_avg_regional_pct') %}Regional: {{ "%.0f"|format(t.pct_within_18_weeks_3m_avg_regional_pct|float) }}th{% endif %}</div>
+      </div>
+    </div>
+    {{ pct_bar(t.get('pct_within_18_weeks_3m_avg_national_pct'), t.get('pct_within_18_weeks_3m_avg_regional_pct'), 'RTT', 'low_bad') }}
+    <div class="insight-what">
+      <strong>What this means:</strong> The 18-week referral-to-treatment standard requires 92% of patients to begin treatment within 18 weeks of GP referral. The current NHS operational standard is 65% as trusts recover from the pandemic backlog.
+      52-week waiters represent a significant patient safety risk — clinical conditions deteriorating while waiting. The NHS elective recovery plan sets a target of near-zero 52-week waiters by March 2025, but many trusts have not achieved this.
+      Long waiting lists are driven by a combination of insufficient elective capacity, high cancellation rates, and downstream diagnostic delays.
+    </div>
+    <div class="insight-question">Which specialties have the longest average waits, and are elective operations being cancelled at a rate that prevents the waiting list from reducing?</div>
+  </div>
+</div>
+{% endif %}
+
+{# PANEL 6: Oversight segment #}
+{% set r6 = t.get('rag_oversight_segment') %}
+{% if r6 and r6 != "Unknown" %}
+<div class="insight-panel {{ r6|lower }}" id="panel-rag_oversight_segment">
+  <div class="insight-header" onclick="togglePanel(this)">
+    <div>
+      <div class="insight-title">NHS Oversight Framework Segment <span class="rag rag-{{ r6|lower }}" style="font-size:11px;margin-left:8px">{{ r6 }}</span></div>
+      <div class="insight-summary">
+        {% if t.get('overall_adjusted_segment') %}Oversight segment {{ "%.0f"|format(t.overall_adjusted_segment|float) }} (1=best, 4=most challenged). Segment 3-4 trusts receive active NHS England support.{% endif %}
+      </div>
+    </div>
+    <span class="insight-toggle">&#9660; expand</span>
+  </div>
+  <div class="insight-body">
+    <div class="insight-grid">
+      <div class="insight-stat">
+        <div class="is-label">Current segment</div>
+        <div class="is-val {% if t.get('overall_adjusted_segment') and t.overall_adjusted_segment|float >= 3 %}trend-up{% elif t.get('overall_adjusted_segment') and t.overall_adjusted_segment|float == 1 %}trend-down{% endif %}">
+          {% if t.get('overall_adjusted_segment') %}{{ "%.0f"|format(t.overall_adjusted_segment|float) }}{% else %}N/A{% endif %}
+        </div>
+        <div class="is-sub">1=Best, 4=Most challenged. Segments 3 and 4 receive active NHS England oversight.</div>
+      </div>
+      <div class="insight-stat">
+        <div class="is-label">Overall avg metric score</div>
+        <div class="is-val">{% if t.get('overall_avg_metric_score') %}{{ "%.1f"|format(t.overall_avg_metric_score|float) }}{% else %}N/A{% endif %}</div>
+        <div class="is-sub">NHS England composite oversight score</div>
+      </div>
+      <div class="insight-stat">
+        <div class="is-label">CQC overall rating</div>
+        <div class="is-val">{% if t.get('rating_overall') %}{{ t.rating_overall }}{% else %}N/A{% endif %}</div>
+        <div class="is-sub">Latest CQC inspection outcome</div>
+      </div>
+    </div>
+    <div class="insight-grid" style="margin-top:10px">
+      <div class="insight-stat">
+        <div class="is-label">Domain: Access</div>
+        <div class="is-val">{% if t.get('domain_score_access') %}{{ "%.1f"|format(t.domain_score_access|float) }}{% else %}N/A{% endif %}</div>
+        <div class="is-sub">NHS England access domain score</div>
+      </div>
+      <div class="insight-stat">
+        <div class="is-label">Domain: People/Workforce</div>
+        <div class="is-val">{% if t.get('domain_score_people_workforce') %}{{ "%.1f"|format(t.domain_score_people_workforce|float) }}{% else %}N/A{% endif %}</div>
+        <div class="is-sub">NHS England workforce domain score</div>
+      </div>
+      <div class="insight-stat">
+        <div class="is-label">Domain: Finance/Productivity</div>
+        <div class="is-val">{% if t.get('domain_score_finance_productivity') %}{{ "%.1f"|format(t.domain_score_finance_productivity|float) }}{% else %}N/A{% endif %}</div>
+        <div class="is-sub">NHS England finance domain score</div>
+      </div>
+    </div>
+    <div class="insight-what">
+      <strong>What this means:</strong> The NHS Oversight Framework assigns every trust to a segment based on performance across six domains. Segment 1 trusts are performing well with no significant concerns. Segment 4 trusts have serious concerns requiring mandated improvement support and closer scrutiny from NHS England regional teams.
+      Segment 3 and 4 trusts face constraints on their financial and operational autonomy, and their leadership decisions are subject to closer scrutiny. Board and executive changes are more likely in these trusts.
+    </div>
+    <div class="insight-question">Which NHS oversight domains are scoring worst for this trust, and what improvement actions have been agreed with the regional NHS England team?</div>
+  </div>
+</div>
+{% endif %}
+
+{# PANEL 7: SHMI #}
+{% set shmi_label = t.get('shmi_banding_label') or "" %}
+{% set r7 = t.get('rag_shmi') %}
+{% if r7 and r7 != "Unknown" %}
+{% set shmi_border = "shmi-higher" if "Higher" in shmi_label else ("shmi-lower" if "Lower" in shmi_label else "shmi-expected") %}
+<div class="section-hdr">Mortality indicator (SHMI)</div>
+<div class="shmi-block {{ shmi_border }}">
+  <div class="shmi-top">
+    <div>
+      <div style="font-size:15px;font-weight:500;margin-bottom:4px">Summary Hospital-level Mortality Indicator</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.5">Ratio of actual to expected deaths within 30 days of discharge. A value above 1.0 means more deaths occurred than statistically expected.</div>
+      <span class="rag rag-{{ r7|lower }}">{{ shmi_label or "Unknown" }}</span>
+    </div>
+    <div style="text-align:right">
+      <div class="shmi-val-big" style="color:{% if 'Higher' in shmi_label %}var(--red){% elif 'Lower' in shmi_label %}var(--green){% else %}var(--amber){% endif %}">
+        {% if t.get('shmi_value_latest') %}{{ "%.3f"|format(t.shmi_value_latest|float) }}{% else %}N/A{% endif %}
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px">SHMI ratio (1.000 = national average)</div>
+      {% if t.get('shmi_value_3m_avg') and t.get('shmi_value_prior_3m_avg') %}
+      <div style="font-size:12px;margin-top:4px">{{ trend_html(t.get('shmi_value_3m_avg'), t.get('shmi_value_prior_3m_avg'), 'high_bad') }}</div>
+      {% endif %}
+    </div>
+  </div>
+  <div class="shmi-stats">
+    <div class="shmi-stat">
+      <div class="shmi-stat-val">{% if t.get('observed_deaths') %}{{ "{:,.0f}".format(t.observed_deaths|float) }}{% else %}N/A{% endif %}</div>
+      <div class="shmi-stat-label">Observed deaths (12 months)</div>
+    </div>
+    <div class="shmi-stat">
+      <div class="shmi-stat-val">{% if t.get('expected_deaths') %}{{ "{:,.0f}".format(t.expected_deaths|float) }}{% else %}N/A{% endif %}</div>
+      <div class="shmi-stat-label">Expected deaths (statistical model)</div>
+    </div>
+    <div class="shmi-stat">
+      <div class="shmi-stat-val">
+        {% if t.get('observed_deaths') and t.get('expected_deaths') %}
+          {% set diff = t.observed_deaths|float - t.expected_deaths|float %}
+          {{ "%+,.0f"|format(diff) }}
+        {% else %}N/A{% endif %}
+      </div>
+      <div class="shmi-stat-label">Difference (observed minus expected)</div>
+    </div>
+  </div>
+  <div class="shmi-disclaimer">
+    &#9432; <strong>Important:</strong> The SHMI is not a direct measure of quality of care and the difference between observed and expected deaths cannot be interpreted as avoidable deaths.
+    A higher than expected SHMI is a smoke alarm that requires further clinical investigation. It may reflect case mix, palliative care activity, coding practices, or genuine quality concerns.
+    {% if t.get('palliative_pct') %}This trust's palliative care coding rate is {{ "%.1f"|format(t.palliative_pct|float * 100) }}% of spells — high palliative rates can legitimately increase the SHMI value.{% endif %}
+    Source: NHS Digital SHMI publication, 12-month rolling period to December 2025.
+  </div>
+</div>
+{% endif %}
+
+<!-- Cost intelligence -->
+{% if t.get('fin_est_total_inefficiency_cost_gbp_3m_avg') %}
+<div class="section-hdr">Estimated annual operational inefficiency cost</div>
+<div class="cost-block">
+  <div class="cost-title">Total estimated annual inefficiency</div>
+  <div class="cost-total">{{ t.fin_est_total_inefficiency_cost_gbp_3m_avg|fmt_cost }}</div>
+  <div class="cost-context">Estimated annual financial cost of four measurable operational inefficiency streams, calculated from publicly available NHS data and annualised from the most recent 3-month window.</div>
+  <div class="cost-breakdown">
+    <div class="cost-item">
+      <div class="ci-label">Delayed discharge</div>
+      <div class="ci-val">{{ t.get('fin_est_delayed_discharge_cost_gbp_3m_avg')|fmt_cost if t.get('fin_est_delayed_discharge_cost_gbp_3m_avg') else "N/A" }}</div>
+      <div class="ci-trend">
+        {{ trend_html(t.get('fin_est_delayed_discharge_cost_gbp_3m_avg'), t.get('fin_est_delayed_discharge_cost_gbp_prior_3m_avg'), 'high_bad') }}
+      </div>
+      <div class="ci-formula">Delayed bed days x £345/day</div>
+    </div>
+    <div class="cost-item">
+      <div class="ci-label">Sickness absence</div>
+      <div class="ci-val">{{ t.get('fin_est_sickness_cost_gbp_3m_avg')|fmt_cost if t.get('fin_est_sickness_cost_gbp_3m_avg') else "N/A" }}</div>
+      <div class="ci-trend">
+        {{ trend_html(t.get('fin_est_sickness_cost_gbp_3m_avg'), t.get('fin_est_sickness_cost_gbp_prior_3m_avg'), 'high_bad') }}
+      </div>
+      <div class="ci-formula">FTE days lost x £200/day</div>
+    </div>
+    <div class="cost-item">
+      <div class="ci-label">Cancelled operations</div>
+      <div class="ci-val">{{ t.get('fin_est_cancelled_ops_cost_gbp_3m_avg')|fmt_cost if t.get('fin_est_cancelled_ops_cost_gbp_3m_avg') else "N/A" }}</div>
+      <div class="ci-trend">
+        {{ trend_html(t.get('fin_est_cancelled_ops_cost_gbp_3m_avg'), t.get('fin_est_cancelled_ops_cost_gbp_prior_3m_avg'), 'high_bad') }}
+      </div>
+      <div class="ci-formula">Cancellations x £3,000/op</div>
+    </div>
+    <div class="cost-item">
+      <div class="ci-label">Missed appointments (DNA)</div>
+      <div class="ci-val">{{ t.get('est_annual_dna_cost_gbp')|fmt_cost if t.get('est_annual_dna_cost_gbp') else "N/A" }}</div>
+      <div class="ci-trend">&nbsp;</div>
+      <div class="ci-formula">DNA count x £120/appointment</div>
+    </div>
+  </div>
+  <div class="cost-note">Sources: NHS England published unit rates. All figures are estimates based on public data only. Internal trust data may produce materially different figures. Inefficiency costs annualised from 3-month averages. See methodology for full assumptions.</div>
+</div>
+{% endif %}
+
+<!-- Charts -->
+<div class="section-hdr">Performance trends (April 2022 to March 2026)</div>
 <div id="charts-section"></div>
 
-<!-- Key metrics + peer comparison -->
+<!-- Workforce detail -->
+<div class="section-hdr">Workforce breakdown</div>
 <div class="two-col">
-  <div class="card">
-    <div class="card-title">Key Metrics (3-month avg)</div>
-    {% set metrics = [
-      ("A&E 4hr performance (Type 1)", trust.ae_type1_4hr_performance, "pct", trust.rag_4hr_type1),
-      ("A&E 12hr breach rate", trust.ae_12hr_breach_rate, "pct", trust.rag_12hr),
-      ("RTT 18-week performance", trust.pct_within_18_weeks_3m_avg, "pct", trust.rag_rtt_18wk),
-      ("Sickness rate", trust.sickness_rate_overall_3m_avg, "rate", trust.rag_sickness),
-      ("Bed occupancy", trust.beds_occupancy_rate_3m_avg, "pct", trust.rag_beds_occupancy),
-      ("Oversight segment", trust.overall_adjusted_segment, "raw", trust.rag_oversight_segment),
-      ("CQC overall rating", trust.rating_overall, "text", trust.rag_cqc_overall),
-      ("Ambulance >60min (%)", trust.amb_over60_pct_3m_avg, "pct", trust.rag_amb_60min),
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1.5rem">
+    <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">Sickness rate by staff group (3-month average)</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:1rem;line-height:1.5">National average is approximately 5.5%. Nursing sickness above 7% is a leading indicator of A&E deterioration 2-3 months later.</div>
+    {% set sg_items = [
+      ("All staff", t.get('sick_sickness_rate_all_3m_avg'), t.get('sick_sickness_rate_all_prior_3m_avg'), "#7a8694"),
+      ("Nurses & HV", t.get('sick_sickness_rate_nursing_3m_avg'), t.get('sick_sickness_rate_nursing_prior_3m_avg'), "#4d9fff"),
+      ("Medical (HCHS)", t.get('sick_sickness_rate_medical_3m_avg'), t.get('sick_sickness_rate_medical_prior_3m_avg'), "#ff4d4d"),
+      ("Midwives", t.get('sick_sickness_rate_midwives_3m_avg'), t.get('sick_sickness_rate_midwives_prior_3m_avg'), "#3ddc84"),
+      ("Support clinical", t.get('sick_sickness_rate_support_clinical_3m_avg'), t.get('sick_sickness_rate_support_clinical_prior_3m_avg'), "#ffb347"),
     ] %}
-    {% for name, val, fmt, metric_rag in metrics %}
-    <div class="metric-row">
-      <span class="metric-name">{{ name }}</span>
-      <span style="display:flex;align-items:center;gap:8px">
-        <span class="metric-val">
-          {% if val is none or val == "" %}
-            <span style="color:var(--muted)">N/A</span>
-          {% elif fmt == "pct" %}
-            {{ "%.1f"|format(val|float * 100) }}%
-          {% elif fmt == "rate" %}
-            {{ "%.1f"|format(val|float) }}%
-          {% elif fmt == "raw" %}
-            {{ "%.1f"|format(val|float) }}
-          {% else %}
-            {{ val }}
-          {% endif %}
-        </span>
-        {% if metric_rag %}
-        <span class="rag rag-{{ metric_rag|lower }}" style="font-size:10px;padding:1px 6px">{{ metric_rag }}</span>
-        {% endif %}
+    {% for label, val, prev_val, col in sg_items %}
+    {% if val %}
+    <div class="sg-row">
+      <span class="sg-label">{{ label }}</span>
+      <div class="sg-bar-wrap">
+        <div class="sg-bar-fill" style="width:{{ [val|float / 12 * 100, 100]|min }}%;background:{{ col }}"></div>
+      </div>
+      <span class="sg-val" style="color:{{ col }}">{{ "%.1f"|format(val|float * 100) }}%</span>
+      <span class="sg-trend">{{ trend_html(val, prev_val, 'high_bad') }}</span>
+    </div>
+    {% endif %}
+    {% endfor %}
+    {% if t.get('s10_mh_pct_3m_avg') and t.s10_mh_pct_3m_avg|float > 0.30 %}
+    <div class="mh-flag">&#9888; Mental health and stress accounts for {{ "%.1f"|format(t.s10_mh_pct_3m_avg|float * 100) }}% of sickness absences — above the 30% threshold indicating elevated staff distress. National average is approximately 28%.</div>
+    {% elif t.get('s10_mh_pct_3m_avg') %}
+    <div class="mh-ok">&#10003; Mental health sickness proportion is {{ "%.1f"|format(t.s10_mh_pct_3m_avg|float * 100) }}% — within expected range.</div>
+    {% endif %}
+  </div>
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1.5rem">
+    <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">Absence reasons (% of total FTE days lost)</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:1rem;line-height:1.5">Mental health and stress is the largest single absence reason nationally. High musculoskeletal absence may indicate poor manual handling training or aging workforce.</div>
+    {% set reason_items = [
+      ("Mental health / stress", t.get('s10_mh_pct_3m_avg'), "var(--red)"),
+      ("Back problems", t.get('s11_back_pct_3m_avg'), "var(--amber)"),
+      ("Other musculoskeletal", t.get('s12_msk_pct_3m_avg'), "var(--amber)"),
+      ("Cold / flu", t.get('s13_cold_pct_3m_avg'), "var(--muted)"),
+      ("Other known", t.get('s98_other_pct_3m_avg'), "var(--muted)"),
+    ] %}
+    {% for label, val, col in reason_items %}
+    {% if val %}
+    <div class="sg-row">
+      <span class="sg-label">{{ label }}</span>
+      <div class="sg-bar-wrap">
+        <div class="sg-bar-fill" style="width:{{ [val|float / 45 * 100, 100]|min }}%;background:{{ col }}"></div>
+      </div>
+      <span class="sg-val" style="color:{{ col }}">{{ "%.1f"|format(val|float * 100) }}%</span>
+    </div>
+    {% endif %}
+    {% endfor %}
+  </div>
+</div>
+
+<!-- Regional peer context -->
+<div class="section-hdr">Regional peer context — {{ t.Region or "region" }}</div>
+<div class="two-col">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1.5rem">
+    {% if peers %}
+    {% for k, label, fmt in [
+      ('count','Trusts in region','int'),('n_red','Red-rated in region','red'),
+      ('n_amber','Amber-rated in region','amber'),('avg_score','Regional avg composite score','float')
+    ] %}
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border)">
+      <span style="font-size:13px;color:var(--muted)">{{ label }}</span>
+      <span style="font-family:var(--font-mono);font-size:13px;{% if fmt=='red' %}color:var(--red){% elif fmt=='amber' %}color:var(--amber){% endif %}">
+        {% if fmt == 'float' %}{{ "%.1f"|format(peers[k]|float) if peers[k] else "N/A" }}
+        {% else %}{{ peers[k] }}{% endif %}
       </span>
     </div>
     {% endfor %}
-  </div>
-
-  <div class="card">
-    <div class="card-title">Regional Context ({{ trust.Region or "Region" }})</div>
-    {% if peers %}
-    <div class="metric-row">
-      <span class="metric-name">Trusts in region</span>
-      <span class="metric-val">{{ peers.count }}</span>
-    </div>
-    <div class="metric-row">
-      <span class="metric-name">Red-rated in region</span>
-      <span class="metric-val" style="color:var(--red)">{{ peers.n_red }}</span>
-    </div>
-    <div class="metric-row">
-      <span class="metric-name">Regional avg composite score</span>
-      <span class="metric-val">{{ "%.1f"|format(peers.avg_score) if peers.avg_score else "N/A" }}</span>
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0">
+      <span style="font-size:13px;color:var(--muted)">This trust vs regional average</span>
+      <span style="font-family:var(--font-mono);font-size:13px">
+        {% if t.composite_score and peers.avg_score %}
+          {% set diff = t.composite_score|float - peers.avg_score|float %}
+          {% if diff > 0 %}<span style="color:var(--red)">+{{ "%.1f"|format(diff) }} above avg</span>
+          {% else %}<span style="color:var(--green)">{{ "%.1f"|format(diff) }} below avg</span>{% endif %}
+        {% else %}N/A{% endif %}
+      </span>
     </div>
     {% endif %}
-
-    <div class="card-title" style="margin-top:1.5rem">RAG Breakdown</div>
-    {% set rag_items = [
-      ("4hr A&E performance", trust.rag_4hr_type1),
-      ("12hr breach rate", trust.rag_12hr),
-      ("RTT 18-week", trust.rag_rtt_18wk),
-      ("Sickness rate", trust.rag_sickness),
-      ("Bed occupancy", trust.rag_beds_occupancy),
-      ("Delayed discharge", trust.rag_delayed_discharge),
-      ("Cancelled operations", trust.rag_cancelled_ops),
-      ("Oversight segment", trust.rag_oversight_segment),
-      ("CQC rating", trust.rag_cqc_overall),
-      ("Ambulance handover", trust.rag_amb_60min),
+  </div>
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1.5rem">
+    <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:1rem">All RAG signals</div>
+    {% set all_rags = [
+      ("A&E 4hr","rag_4hr_type1"),("A&E 12hr","rag_12hr"),("Ambulance","rag_amb_60min"),
+      ("RTT 18-week","rag_rtt_18wk"),("52-week waiters","rag_rtt_52wk"),("Sickness","rag_sickness"),
+      ("Nursing trend","rag_nursing_trend"),("Vacancies","rag_vacancy"),("Oversight segment","rag_oversight_segment"),
+      ("Finance variance","rag_finance_variance"),("Productivity","rag_productivity"),("CQC","rag_cqc_overall"),
+      ("Bed occupancy","rag_beds_occupancy"),("Delayed discharge","rag_delayed_discharge"),
+      ("Cancelled ops","rag_cancelled_ops"),("C.diff","rag_cdiff"),("DNA rate","rag_dna_rate"),("SHMI","rag_shmi"),
     ] %}
-    {% for name, metric_rag in rag_items %}
-    <div class="metric-row">
-      <span class="metric-name">{{ name }}</span>
-      {% if metric_rag %}
-      <span class="rag rag-{{ metric_rag|lower }}" style="font-size:11px">{{ metric_rag }}</span>
-      {% else %}
-      <span style="color:var(--muted);font-size:12px">Unknown</span>
-      {% endif %}
+    {% for name, field in all_rags %}
+    {% set r = t.get(field) %}
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">
+      <span style="font-size:12px;color:var(--muted)">{{ name }}</span>
+      {% if r and r != "Unknown" %}
+      <span class="rag rag-{{ r|lower }}" style="font-size:10px;padding:1px 7px">{{ r }}</span>
+      {% else %}<span style="font-size:11px;color:var(--muted)">No data</span>{% endif %}
     </div>
     {% endfor %}
   </div>
@@ -268,82 +808,74 @@ main{max-width:1200px;margin:0 auto;padding:2rem}
 const TRUST = {{ trust|tojson }};
 const CHARTS_RAW = {{ charts|safe }};
 
-function makeLine(divId, title, months, series, targets) {
+function togglePanel(hdr) {
+  const body = hdr.nextElementSibling;
+  const toggle = hdr.querySelector('.insight-toggle');
+  body.classList.toggle('open');
+  toggle.textContent = body.classList.contains('open') ? '▲ collapse' : '▼ expand';
+}
+
+function scrollToPanel(id) {
+  const el = document.getElementById(id);
+  if (el) { el.scrollIntoView({behavior:'smooth',block:'start'}); const hdr = el.querySelector('.insight-header'); if (hdr) { const body = hdr.nextElementSibling; if (!body.classList.contains('open')) { hdr.click(); } } }
+}
+
+function makeLine(divId, months, series, targets) {
   const traces = series.map(s => ({
-    x: months, y: s.values, type: 'scatter', mode: 'lines+markers',
-    name: s.name, line: { color: s.color, width: 2 },
-    marker: { size: 4, color: s.color }
+    x: months, y: s.values, type:'scatter', mode:'lines+markers',
+    name: s.name, line:{color:s.color,width:2}, marker:{size:4,color:s.color}
   }));
-  targets.forEach(t => {
-    traces.push({
-      x: [months[0], months[months.length-1]],
-      y: [t.value, t.value],
-      mode: 'lines', name: t.name,
-      line: { color: t.color, width: 1, dash: 'dash' },
-      showlegend: true
-    });
-  });
+  targets.forEach(t => traces.push({
+    x:[months[0],months[months.length-1]], y:[t.value,t.value],
+    mode:'lines', name:t.name, line:{color:t.color,width:1,dash:'dash'}, showlegend:true
+  }));
   Plotly.newPlot(divId, traces, {
-    paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
-    font: { family: 'DM Sans, sans-serif', color: '#7a8694', size: 11 },
-    margin: { l: 40, r: 10, t: 20, b: 40 },
-    xaxis: { gridcolor: '#2a2f36', tickfont: { size: 10 }, tickangle: -30 },
-    yaxis: { gridcolor: '#2a2f36' },
-    legend: { orientation: 'h', y: -0.25, font: { size: 10 } },
-    hovermode: 'x unified'
-  }, { responsive: true, displayModeBar: false });
+    paper_bgcolor:'transparent', plot_bgcolor:'transparent',
+    font:{family:'DM Sans,sans-serif',color:'#7a8694',size:11},
+    margin:{l:40,r:10,t:20,b:40},
+    xaxis:{gridcolor:'#2a2f36',tickfont:{size:10},tickangle:-30},
+    yaxis:{gridcolor:'#2a2f36'},
+    legend:{orientation:'h',y:-0.3,font:{size:10}},
+    hovermode:'x unified'
+  },{responsive:true,displayModeBar:false});
 }
 
 const section = document.getElementById('charts-section');
-const chartDefs = [];
+const chartGrid = document.createElement('div');
+chartGrid.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:2rem';
 
-if (CHARTS_RAW.ae) {
-  chartDefs.push({
-    key: 'ae', title: 'Type 1 A&E 4-Hour Performance (%)',
-    series: [{ name: '4hr performance', values: CHARTS_RAW.ae.perf.map(v => v != null ? v*100 : null), color: '#4d9fff' }],
-    targets: [{ name: 'Target 76%', value: 76, color: '#ff4d4d' }]
-  });
-}
-if (CHARTS_RAW.sickness) {
-  chartDefs.push({
-    key: 'sickness', title: 'Sickness Absence Rate (%)',
-    series: [{ name: 'Sickness rate', values: CHARTS_RAW.sickness.rate, color: '#ffb347' }],
-    targets: [{ name: 'National avg ~5.5%', value: 5.5, color: '#3ddc84' }]
-  });
-}
-if (CHARTS_RAW.beds) {
-  chartDefs.push({
-    key: 'beds', title: 'G&A Bed Occupancy Rate (%)',
-    series: [{ name: 'Occupancy', values: CHARTS_RAW.beds.rate, color: '#4d9fff' }],
-    targets: [
-      { name: 'RCEM ceiling 85%', value: 85, color: '#ffb347' },
-      { name: 'Crisis level 95%', value: 95, color: '#ff4d4d' }
-    ]
-  });
-}
-if (CHARTS_RAW.rtt) {
-  chartDefs.push({
-    key: 'rtt', title: 'RTT 18-Week Performance (%)',
-    series: [{ name: '18-week performance', values: CHARTS_RAW.rtt.perf.map(v => v != null ? v*100 : null), color: '#3ddc84' }],
-    targets: [{ name: 'Target 65%', value: 65, color: '#ff4d4d' }]
-  });
-}
+const configs = [
+  { key:'ae', title:'Type 1 A&E 4-Hour Performance',
+    sub:'Percentage seen and treated within 4 hours. NHS standard 76%. Sustained underperformance triggers NHS England oversight.',
+    series:[{name:'4hr performance',values:CHARTS_RAW.ae?CHARTS_RAW.ae.perf:[],color:'#4d9fff'}],
+    targets:[{name:'Standard 76%',value:76,color:'#ff4d4d'}], months:CHARTS_RAW.ae?CHARTS_RAW.ae.months:[] },
+  { key:'sickness', title:'Overall Sickness Absence Rate',
+    sub:'Monthly sickness as % of FTE days. National average ~5.5%. Rising sickness predicts A&E deterioration 2-3 months later.',
+    series:[{name:'Sickness rate',values:CHARTS_RAW.sickness?CHARTS_RAW.sickness.rate:[],color:'#ffb347'}],
+    targets:[{name:'National avg 5.5%',value:5.5,color:'#3ddc84'}], months:CHARTS_RAW.sickness?CHARTS_RAW.sickness.months:[] },
+  { key:'beds', title:'G&A Bed Occupancy Rate',
+    sub:'Daily average occupied G&A beds as % of available. RCEM ceiling 85%. Above 95% = crisis — directly linked to A&E corridor care.',
+    series:[{name:'Occupancy',values:CHARTS_RAW.beds?CHARTS_RAW.beds.rate:[],color:'#4d9fff'}],
+    targets:[{name:'RCEM ceiling 85%',value:85,color:'#ffb347'},{name:'Crisis 95%',value:95,color:'#ff4d4d'}],
+    months:CHARTS_RAW.beds?CHARTS_RAW.beds.months:[] },
+  { key:'rtt', title:'RTT 18-Week Performance',
+    sub:'% of incomplete RTT pathways within 18 weeks. NHS operational standard currently 65%. 52-week waiters should be near zero.',
+    series:[{name:'18-week performance',values:CHARTS_RAW.rtt?CHARTS_RAW.rtt.perf:[],color:'#3ddc84'}],
+    targets:[{name:'Operational standard 65%',value:65,color:'#ff4d4d'}], months:CHARTS_RAW.rtt?CHARTS_RAW.rtt.months:[] },
+];
 
-if (chartDefs.length > 0) {
-  // 2-col chart grid
-  const grid = document.createElement('div');
-  grid.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:2rem';
-  chartDefs.forEach(cd => {
-    const wrap = document.createElement('div');
-    wrap.className = 'chart-wrap';
-    wrap.innerHTML = `<div class="chart-title">${cd.title}</div><div class="chart-area" id="chart-${cd.key}"></div>`;
-    grid.appendChild(wrap);
-  });
-  section.appendChild(grid);
-
-  chartDefs.forEach(cd => {
-    const months = CHARTS_RAW[cd.key].months;
-    makeLine(`chart-${cd.key}`, cd.title, months, cd.series, cd.targets);
+configs.forEach(cd => {
+  if (!cd.months || cd.months.length === 0) return;
+  const wrap = document.createElement('div');
+  wrap.className = 'chart-wrap';
+  wrap.innerHTML = `<div class="chart-title">${cd.title}</div><div class="chart-subtitle">${cd.sub}</div><div class="chart-area" id="chart-${cd.key}"></div>`;
+  chartGrid.appendChild(wrap);
+});
+if (chartGrid.children.length > 0) {
+  section.appendChild(chartGrid);
+  configs.forEach(cd => {
+    if (!cd.months || cd.months.length === 0) return;
+    makeLine(`chart-${cd.key}`, cd.months, cd.series, cd.targets);
   });
 }
 </script>

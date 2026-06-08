@@ -116,6 +116,31 @@ SNAPSHOT_COLS = {
     "location_id", "location_primary_inspection_category",
     "location_nhs_region", "location_region", "provider_name",
     "inherited_rating", "publication_date", "url",
+    # Reference costs -- annual snapshot
+    "rc_actual_cost_total_m", "rc_expected_cost_total_m", "rc_cost_gap_m",
+    "rc_cost_gap_pct", "rc_apc_actual_m", "rc_apc_gap_pct",
+    "rc_op_actual_m", "rc_op_gap_pct", "rc_ae_actual_m", "rc_ae_gap_pct",
+    # Complaints -- annual snapshot
+    "comp_total_new", "comp_pct_upheld", "comp_pct_comm",
+    "comp_pct_waiting", "comp_pct_clinical", "comp_pct_discharge",
+    "comp_pct_care", "comp_service_inpatient", "comp_service_outpatient",
+    "comp_service_emergency",
+    # Estates -- annual snapshot
+    "estates_backlog_high_risk_m", "estates_backlog_significant_m",
+    "estates_backlog_moderate_m", "estates_backlog_total_m",
+    "estates_maintenance_cost_m", "estates_total_sites",
+    "estates_capital_lifecycle_m", "estates_fires_count",
+    # Never events -- annual snapshot
+    "ne_count", "ne_provisional", "financial_year",
+    # WLMDS -- weekly snapshot
+    "wlmds_total_waiting", "wlmds_waiting_u18wks", "wlmds_waiting_over52",
+    "wlmds_pct_within_18wks", "wlmds_pct_over52wks",
+    "wlmds_waiting_first_att", "wlmds_pct_first_att",
+    "wlmds_waiting_18to26", "wlmds_waiting_26to40", "wlmds_waiting_40to52",
+    # SHMI -- snapshot (annual, joined once per trust)
+    "shmi_banding", "shmi_banding_label",
+    # Note: shmi_value, fds_performance, t62d_performance are monthly time series
+    # -- keep them OUT of SNAPSHOT_COLS so _3m_avg versions are produced
 }
 
 # Columns to drop entirely from analysis (100% null artefacts from AE ingest)
@@ -227,7 +252,12 @@ def build_profiles(master):
         for col in ("Region", "Trust_type", "Trust_subtype",
                     "rating_overall", "rating_safe", "rating_effective",
                     "rating_caring", "rating_responsive", "rating_well-led",
-                    "fin_ics_name", "fin_region", "vac_region"):
+                    "fin_ics_name", "fin_region", "vac_region",
+                    "shmi_banding_label", "financial_year",
+                    "location_id", "location_primary_inspection_category",
+                    "location_nhs_region", "location_region",
+                    "provider_name", "inherited_rating",
+                    "publication_date", "url", "survey_date"):
             if col in tdf.columns:
                 val = tdf[col].dropna().iloc[-1] if tdf[col].notna().any() else np.nan
                 row[col] = val

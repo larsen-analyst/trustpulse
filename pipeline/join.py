@@ -198,12 +198,33 @@ def build_rtt_metrics():
         df = df.rename(columns={"provider_org_code": "org_code"})
 
     drop = [c for c in ("period_date", "provider_org_name", "rtt_part_description",
-                        "treatment_function_name") if c in df.columns]
+                        "treatment_function_name", "treatment_function_code",
+                        "rtt_part_type") if c in df.columns]
     df = df.drop(columns=drop).copy()
 
-    num_cols = [c for c in df.columns if c not in ("org_code", "month",
-                "rtt_part_type", "treatment_function_code")]
-    agg = df.groupby(["org_code", "month"])[num_cols].sum().reset_index()
+    # Sum raw counts only -- do NOT sum derived percentages or median estimates
+    count_cols = [c for c in df.columns if c not in
+                  ("org_code", "month", "pct_within_18_weeks", "median_wait_weeks_est")]
+    agg = df.groupby(["org_code", "month"])[count_cols].sum().reset_index()
+
+    # Recalculate pct_within_18_weeks from summed counts
+    if "waiting_under_18_weeks" in agg.columns and "total_waiting" in agg.columns:
+        agg["pct_within_18_weeks"] = (
+            agg["waiting_under_18_weeks"] / agg["total_waiting"].replace(0, float("nan"))
+        ).round(4)
+
+    # Recalculate median wait estimate: use 52-week waiters / total as proxy
+    # Cannot meaningfully average medians -- use total waiting and band distribution
+    if "waiting_18_to_52_weeks" in agg.columns and "total_waiting" in agg.columns:
+        # Estimate median weeks from band midpoints weighted by counts
+        u18  = agg.get("waiting_under_18_weeks", 0)
+        w18  = agg.get("waiting_18_to_52_weeks", 0)
+        w52  = agg.get("waiting_over_52_weeks", 0)
+        tot  = agg["total_waiting"].replace(0, float("nan"))
+        # Weighted midpoint: u18=9wks, 18-52=35wks, 52+=65wks
+        agg["median_wait_weeks_est"] = (
+            (u18 * 9 + w18 * 35 + w52 * 65) / tot
+        ).round(2)
 
     print(f"  RTT         : {agg.shape}")
     return agg
