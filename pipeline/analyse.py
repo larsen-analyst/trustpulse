@@ -132,6 +132,9 @@ SNAPSHOT_COLS = {
     "estates_capital_lifecycle_m", "estates_fires_count",
     # Never events -- annual snapshot
     "ne_count", "ne_provisional", "financial_year",
+    # NHS Oversight League Tables -- quarterly snapshot
+    "lt_segment", "lt_rank", "lt_avg_score", "lt_in_deficit",
+    "lt_trust_type", "lt_region",
     # WLMDS -- weekly snapshot
     "wlmds_total_waiting", "wlmds_waiting_u18wks", "wlmds_waiting_over52",
     "wlmds_pct_within_18wks", "wlmds_pct_over52wks",

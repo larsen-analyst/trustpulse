@@ -38,6 +38,7 @@ COMPLAINTS_PATH      = DATA_DIR / "complaints_clean.csv"
 ESTATES_PATH         = DATA_DIR / "estates_clean.csv"
 NEVER_EVENTS_PATH    = DATA_DIR / "never_events_clean.csv"
 WLMDS_PATH           = DATA_DIR / "rtt_specialty_clean.csv"
+LEAGUE_TABLES_PATH   = DATA_DIR / "league_tables_clean.csv"
 
 MASTER_OUT   = DATA_DIR / "trust_master.csv"
 PROFILES_OUT = DATA_DIR / "trust_profiles.csv"
@@ -724,6 +725,24 @@ def build_wlmds_metrics():
     return df
 
 
+def build_league_tables_metrics():
+    """
+    Load league_tables_clean.csv -- NHS Oversight Framework Q3 2025/26.
+    Snapshot join on org_code.
+    Key signals: lt_segment (1-4), lt_rank (1-134), lt_avg_score, lt_in_deficit.
+    """
+    if not LEAGUE_TABLES_PATH.exists():
+        print("  [WARNING] league_tables_clean.csv not found -- skipping")
+        return pd.DataFrame()
+    df = pd.read_csv(LEAGUE_TABLES_PATH, dtype={"org_code": str})
+    keep = ["org_code", "lt_segment", "lt_rank", "lt_avg_score",
+            "lt_in_deficit", "lt_trust_type", "lt_region"]
+    keep = [c for c in keep if c in df.columns]
+    df = df[keep].drop_duplicates(subset=["org_code"])
+    print(f"  League tables   : {len(df)} trusts | Q3 2025/26")
+    return df
+
+
 def run():
     print("[join] Starting master join...")
 
@@ -756,6 +775,7 @@ def run():
     estates_metrics         = build_estates_metrics()
     never_events_metrics    = build_never_events_metrics()
     wlmds_metrics           = build_wlmds_metrics()
+    league_tables_metrics   = build_league_tables_metrics()
 
     # ---------------------------------------------------------------------------
     # Join time series datasets onto spine (left join -- keeps all spine rows)
@@ -863,6 +883,10 @@ def run():
     if not wlmds_metrics.empty:
         master = master.merge(wlmds_metrics, on="org_code", how="left")
         print(f"  After WLMDS join: {master.shape}")
+
+    if not league_tables_metrics.empty:
+        master = master.merge(league_tables_metrics, on="org_code", how="left")
+        print(f"  After league tables join: {master.shape}")
 
     master = master.merge(cqc_metrics,       on="org_code", how="left")
     master = master.merge(oversight_metrics,  on="org_code", how="left")
