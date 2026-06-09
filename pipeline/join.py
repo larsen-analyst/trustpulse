@@ -39,6 +39,7 @@ ESTATES_PATH         = DATA_DIR / "estates_clean.csv"
 NEVER_EVENTS_PATH    = DATA_DIR / "never_events_clean.csv"
 WLMDS_PATH           = DATA_DIR / "rtt_specialty_clean.csv"
 LEAGUE_TABLES_PATH   = DATA_DIR / "league_tables_clean.csv"
+DIGITAL_MAT_PATH     = DATA_DIR / "digital_maturity_clean.csv"
 
 MASTER_OUT   = DATA_DIR / "trust_master.csv"
 PROFILES_OUT = DATA_DIR / "trust_profiles.csv"
@@ -743,6 +744,25 @@ def build_league_tables_metrics():
     return df
 
 
+def build_digital_maturity_metrics():
+    """
+    Load digital_maturity_clean.csv -- NHS DMA 2025 trust scores.
+    Snapshot join on org_code.
+    7 WGLL pillar scores (1-5) plus overall mean.
+    """
+    if not DIGITAL_MAT_PATH.exists():
+        print("  [WARNING] digital_maturity_clean.csv not found -- skipping")
+        return pd.DataFrame()
+    df = pd.read_csv(DIGITAL_MAT_PATH, dtype={"org_code": str})
+    keep = ["org_code", "dma_well_led", "dma_smart_foundations", "dma_safe_practice",
+            "dma_support_workforce", "dma_empower_people", "dma_improve_care",
+            "dma_healthy_populations", "dma_overall"]
+    keep = [c for c in keep if c in df.columns]
+    df = df[keep].drop_duplicates(subset=["org_code"])
+    print(f"  Digital maturity: {len(df)} trusts | DMA 2025")
+    return df
+
+
 def run():
     print("[join] Starting master join...")
 
@@ -776,6 +796,7 @@ def run():
     never_events_metrics    = build_never_events_metrics()
     wlmds_metrics           = build_wlmds_metrics()
     league_tables_metrics   = build_league_tables_metrics()
+    digital_mat_metrics     = build_digital_maturity_metrics()
 
     # ---------------------------------------------------------------------------
     # Join time series datasets onto spine (left join -- keeps all spine rows)
@@ -887,6 +908,10 @@ def run():
     if not league_tables_metrics.empty:
         master = master.merge(league_tables_metrics, on="org_code", how="left")
         print(f"  After league tables join: {master.shape}")
+
+    if not digital_mat_metrics.empty:
+        master = master.merge(digital_mat_metrics, on="org_code", how="left")
+        print(f"  After digital maturity join: {master.shape}")
 
     master = master.merge(cqc_metrics,       on="org_code", how="left")
     master = master.merge(oversight_metrics,  on="org_code", how="left")

@@ -132,6 +132,10 @@ SNAPSHOT_COLS = {
     "estates_capital_lifecycle_m", "estates_fires_count",
     # Never events -- annual snapshot
     "ne_count", "ne_provisional", "financial_year",
+    # Digital Maturity Assessment -- annual snapshot
+    "dma_well_led", "dma_smart_foundations", "dma_safe_practice",
+    "dma_support_workforce", "dma_empower_people", "dma_improve_care",
+    "dma_healthy_populations", "dma_overall",
     # NHS Oversight League Tables -- quarterly snapshot
     "lt_segment", "lt_rank", "lt_avg_score", "lt_in_deficit",
     "lt_trust_type", "lt_region",
