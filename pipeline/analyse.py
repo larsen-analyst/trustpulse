@@ -132,6 +132,9 @@ SNAPSHOT_COLS = {
     "estates_capital_lifecycle_m", "estates_fires_count",
     # Never events -- annual snapshot
     "ne_count", "ne_provisional", "financial_year",
+    # DSPT cyber security scores -- annual snapshot
+    "dspt_standards_met", "dspt_approaching", "dspt_not_met",
+    "dspt_year",
     # Digital Maturity Assessment -- annual snapshot
     "dma_well_led", "dma_smart_foundations", "dma_safe_practice",
     "dma_support_workforce", "dma_empower_people", "dma_improve_care",

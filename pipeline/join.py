@@ -40,6 +40,7 @@ NEVER_EVENTS_PATH    = DATA_DIR / "never_events_clean.csv"
 WLMDS_PATH           = DATA_DIR / "rtt_specialty_clean.csv"
 LEAGUE_TABLES_PATH   = DATA_DIR / "league_tables_clean.csv"
 DIGITAL_MAT_PATH     = DATA_DIR / "digital_maturity_clean.csv"
+DSPT_PATH            = DATA_DIR / "dspt_clean.csv"
 
 MASTER_OUT   = DATA_DIR / "trust_master.csv"
 PROFILES_OUT = DATA_DIR / "trust_profiles.csv"
@@ -763,6 +764,24 @@ def build_digital_maturity_metrics():
     return df
 
 
+def build_dspt_metrics():
+    """
+    Load dspt_clean.csv -- NHS DSPT cyber security scores per trust.
+    Snapshot join on org_code.
+    Key signals: dspt_standards_met, dspt_approaching, dspt_not_met.
+    """
+    if not DSPT_PATH.exists():
+        print("  [WARNING] dspt_clean.csv not found -- skipping")
+        return pd.DataFrame()
+    df = pd.read_csv(DSPT_PATH, dtype={"org_code": str})
+    keep = ["org_code", "dspt_standards_met", "dspt_approaching",
+            "dspt_not_met", "dspt_year", "dspt_classification"]
+    keep = [c for c in keep if c in df.columns]
+    df = df[keep].drop_duplicates(subset=["org_code"])
+    print(f"  DSPT scores     : {len(df)} trusts | 2024-25")
+    return df
+
+
 def run():
     print("[join] Starting master join...")
 
@@ -797,6 +816,7 @@ def run():
     wlmds_metrics           = build_wlmds_metrics()
     league_tables_metrics   = build_league_tables_metrics()
     digital_mat_metrics     = build_digital_maturity_metrics()
+    dspt_metrics            = build_dspt_metrics()
 
     # ---------------------------------------------------------------------------
     # Join time series datasets onto spine (left join -- keeps all spine rows)
@@ -912,6 +932,10 @@ def run():
     if not digital_mat_metrics.empty:
         master = master.merge(digital_mat_metrics, on="org_code", how="left")
         print(f"  After digital maturity join: {master.shape}")
+
+    if not dspt_metrics.empty:
+        master = master.merge(dspt_metrics, on="org_code", how="left")
+        print(f"  After DSPT join: {master.shape}")
 
     master = master.merge(cqc_metrics,       on="org_code", how="left")
     master = master.merge(oversight_metrics,  on="org_code", how="left")
